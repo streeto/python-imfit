@@ -1,4 +1,8 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# Licensed under GPLv3 - see LICENSE.rst
+'''
+Python bindings for Imfit, a fast, flexible multi-component fitting of galaxy images.
+Based on Imfit 1.0b2.
+'''
 
 #this indicates whether or not we are in the package's setup.py
 try:

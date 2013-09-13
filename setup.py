@@ -20,6 +20,7 @@ import glob
 import os
 from setuptools import setup, find_packages
 
+
 #A dirty hack to get around some early import/configurations ambiguities
 if sys.version_info[0] >= 3:
     import builtins
@@ -34,16 +35,17 @@ from astropy.setup_helpers import (register_commands, adjust_compiler,
 from astropy.version_helpers import get_git_devstr, generate_version_py
 
 # Set affiliated package-specific settings
-PACKAGENAME = 'packagename'
-DESCRIPTION = 'Astropy affiliated package'
-LONG_DESCRIPTION = ''
-AUTHOR = ''
-AUTHOR_EMAIL = ''
-LICENSE = 'BSD'
+PACKAGENAME = 'imfit'
+DESCRIPTION = 'Python bindings for Imfit'
+import imfit
+LONG_DESCRIPTION = imfit.__doc__
+AUTHOR = 'André Luiz de Amorim'
+AUTHOR_EMAIL = 'streetomon@gmail.com'
+LICENSE = 'GPL'
 URL = 'http://astropy.org'
 
 # VERSION should be PEP386 compatible (http://www.python.org/dev/peps/pep-0386)
-VERSION = '0.0.dev'
+VERSION = '1.0.0.dev'
 
 # Indicates if this version is a release version
 RELEASE = 'dev' not in VERSION

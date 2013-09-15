@@ -38,3 +38,4 @@ distribute-*.tar.gz
 .project
 .pydevproject
 .settings/org.eclipse.core.resources.prefs
+*.cpp

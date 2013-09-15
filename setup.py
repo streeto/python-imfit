@@ -39,7 +39,7 @@ PACKAGENAME = 'imfit'
 DESCRIPTION = 'Python bindings for Imfit'
 import imfit
 LONG_DESCRIPTION = imfit.__doc__
-AUTHOR = 'André Luiz de Amorim'
+AUTHOR = 'Andre Luiz de Amorim'
 AUTHOR_EMAIL = 'streetomon@gmail.com'
 LICENSE = 'GPL'
 URL = 'http://astropy.org'

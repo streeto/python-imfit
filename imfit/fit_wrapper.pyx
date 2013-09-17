@@ -147,7 +147,9 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     status = LevMarFit(nParamsTot, nFreeParams, nPixels_tot, paramsVect, parameterInfo,
                        theModel, ftol, paramLimitsExist, verbose)
  
-#     free(paramsVect)
-#     free(parameterInfo)
+    free(paramsVect)
+    free(parameterInfo)
+    
+    del theModel
    
     print 'Done!'

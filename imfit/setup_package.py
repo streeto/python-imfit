@@ -1,20 +1,17 @@
 # Licensed under GPLv3 - see LICENSE.rst
 
 import os
-
+from glob import glob
 from distutils.core import Extension
+from astropy import setup_helpers
 
 IMFITROOT = os.path.relpath(os.path.dirname(__file__))
 
-
 def get_extensions():
-    sources = [os.path.join(IMFITROOT, 'test_extlib.pyx')]
-    libraries = ['imfit', 'fftw3', 'fftw3_threads']
+    cfg = setup_helpers.DistutilsExtensionArgs()
+    cfg['include_dirs'].append('numpy')
+    cfg['sources'] = ['imfit/fit_wrapper.pyx']
+    cfg['libraries'].extend(['imfit', 'fftw3', 'fftw3_threads', 'gsl'])
+    cfg['language'] = 'c++'
 
-    test_ext = Extension(
-        name='imfit.test_extlib',
-        sources=sources,
-        libraries=libraries,
-        language='c++')
-
-    return [test_ext]
+    return [Extension('imfit.fit_wrapper', **cfg)]

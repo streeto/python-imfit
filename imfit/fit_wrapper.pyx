@@ -4,9 +4,9 @@ Created on Sep 15, 2013
 @author: andre
 '''
 
-from imfit cimport ModelObject, mp_par, configOptions
-from imfit cimport ReadConfigFile, AddFunctions, LevMarFit
-from imfit cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
+from imfit_lib cimport ModelObject, mp_par, configOptions
+from imfit_lib cimport ReadConfigFile, AddFunctions, LevMarFit, PrintResults, mp_result
+from imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
 
 cimport numpy as np
 import numpy as np
@@ -31,6 +31,10 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
         int verbose=1,
         int errorType=WEIGHTS_ARE_SIGMAS,
         int maskFormat=MASK_ZERO_IS_GOOD):
+    '''
+    Wrapper for the whole fitting, including input as a config file.
+    '''
+    
     cdef int nPixels_tot, nColumns, nRows
     cdef int nPixels_psf, nRows_psf, nColumns_psf
     cdef int nErrColumns, nErrRows, nMaskColumns, nMaskRows
@@ -53,6 +57,9 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     cdef configOptions userConfigOptions
     cdef int i
      
+    theModel = new ModelObject()
+    theModel.SetMaxThreads(2)
+     
     if not path.exists(configFileName):
         print '*** WARNING: Unable to find configuration file \"%s\"!' % configFileName
         return
@@ -63,6 +70,18 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
         print '*** WARNING: Failure reading configuration file!'
         return
      
+    status = AddFunctions(theModel, functionList, functionSetIndices, True)
+    if status < 0:
+        print '*** WARNING: Failure in AddFunctions!\n\n'
+        return
+
+    # Set up parameter vector(s), now that we know total # parameters
+    nParamsTot = nFreeParams = theModel.GetNParams();
+    print '%d total parameters' % nParamsTot
+    if nParamsTot != parameterList.size():
+        print '*** WARNING: number of input parameters (%d) does not equal required number of parameters for specified functions (%d)!' % (parameterList.size(), nParamsTot)
+        return
+ 
     image = np.ascontiguousarray(image).copy()
     nRows = image.shape[0]
     nColumns = image.shape[1]
@@ -85,34 +104,20 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     nPixels_psf = nColumns_psf * nRows_psf
     psfPixels = &psf[0,0]
     
-    theModel = new ModelObject()
-    theModel.SetMaxThreads(2)
-     
-    status = AddFunctions(theModel, functionList, functionSetIndices, True)
-    if status < 0:
-        print '*** WARNING: Failure in AddFunctions!\n\n'
-        return
-#     
-    # Set up parameter vector(s), now that we know total # parameters
-    nParamsTot = nFreeParams = theModel.GetNParams();
-    print '%d total parameters' % nParamsTot
-    if nParamsTot != parameterList.size():
-        print '*** WARNING: number of input parameters (%d) does not equal required number of parameters for specified functions (%d)!' % (parameterList.size(), nParamsTot)
-        return
- 
     theModel.AddPSFVector(nPixels_psf, nColumns_psf, nRows_psf, psfPixels)
     theModel.AddImageDataVector(allPixels, nColumns, nRows)
     theModel.AddImageCharacteristics(gain, readNoise, expTime, nCombined,
                                      originalSky)
-    theModel.PrintDescription()
     theModel.AddErrorVector(nPixels_tot, nColumns, nRows, allErrorPixels,
                             errorType)
     theModel.AddMaskVector(nPixels_tot, nColumns, nRows, allMaskPixels,
                            maskFormat)
     theModel.ApplyMask()
- 
+
+    theModel.PrintDescription()
+
     '''
-    START OF MINIMIZATION-ROUTINE-RELATED CODE */
+    START OF MINIMIZATION-ROUTINE-RELATED CODE
     Parameter limits and other info:
     First we create a C-style array of mp_par structures, containing parameter constraints
     (if any) *and* any other useful info (like X0,Y0 offset values).  This will be used
@@ -137,7 +142,7 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     print '%d free parameters (%d degrees of freedom)' % (nFreeParams, nDegFreedom)
    
    
-    # Copy initial parameter values into C array, correcting for X0,Y0 offsets
+    # Copy initial parameter values into C array
     paramsVect = <double *> calloc(nParamsTot, sizeof(double))
     for i in xrange(nParamsTot):
         paramsVect[i] = parameterList[i]

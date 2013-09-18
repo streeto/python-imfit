@@ -6,12 +6,27 @@ Created on Sep 17, 2013
 
 
 from imfit.fit_wrapper import fit
-import pyfits
-image = pyfits.getdata('lala/K0846_0.3.6_qSignal.fits').astype('float64')
-noise = pyfits.getdata('lala/K0846_0.3.6_qNoise.fits').astype('float64')
-mask = pyfits.getdata('lala/K0846_0.3.6_mask.fits').astype('float64')
-psf = pyfits.getdata('lala/psf_moffat36.fits').astype('float64')
+
+def read_image(fname):
+    import pyfits
+    arr = pyfits.getdata(fname)
+    return arr.astype('float64')
+
+image = read_image('lala/K0846_0.3.6_qSignal.fits')
+noise = read_image('lala/K0846_0.3.6_qNoise.fits')
+mask = read_image('lala/K0846_0.3.6_mask.fits')
+psf = read_image('lala/psf_moffat36.fits')
 
 for i in xrange(1):
-    fit(image, mask, noise, psf, 'lala/config_sersic_K0846.dat', 1, 1.0, 1.0, 0.0, 0.0, 1.0e-8)
+    fit(image=image,
+        mask=mask,
+        noise=noise,
+        psf=psf,
+        configFileName='lala/config_sersic_K0846.dat',
+        nCombined=1,
+        expTime=1.0,
+        gain=1.0,
+        readNoise=0.0,
+        originalSky=0.0,
+        ftol=1.0e-8)
 

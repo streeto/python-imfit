@@ -64,31 +64,31 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
         return
      
     image = np.ascontiguousarray(image).copy()
-    nColumns = image.shape[0]
-    nRows = image.shape[1]
+    nRows = image.shape[0]
+    nColumns = image.shape[1]
     nPixels_tot = nColumns * nRows
     allPixels = &image[0,0]
      
     mask = np.ascontiguousarray(mask).copy()
-    nMaskColumns = mask.shape[0]
-    nMaskRows = mask.shape[1]
+    nMaskRows = mask.shape[0]
+    nMaskColumns = mask.shape[1]
     allMaskPixels = &mask[0,0]
  
     noise = np.ascontiguousarray(noise).copy()
-    nErrColumns = noise.shape[0]
-    nErrRows = noise.shape[1]
+    nErrRows = noise.shape[0]
+    nErrColumns = noise.shape[1]
     allErrorPixels = &noise[0,0]
  
     psf = np.ascontiguousarray(psf).copy()
-    nColumns_psf = psf.shape[0]
-    nRows_psf = psf.shape[1]
+    nRows_psf = psf.shape[0]
+    nColumns_psf = psf.shape[1]
     nPixels_psf = nColumns_psf * nRows_psf
     psfPixels = &psf[0,0]
     
     theModel = new ModelObject()
     theModel.SetMaxThreads(2)
      
-    status = AddFunctions(theModel, functionList, functionSetIndices, False)
+    status = AddFunctions(theModel, functionList, functionSetIndices, True)
     if status < 0:
         print '*** WARNING: Failure in AddFunctions!\n\n'
         return

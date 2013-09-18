@@ -5,7 +5,8 @@ Created on Sep 17, 2013
 '''
 
 
-from imfit.fit_wrapper import fit
+from imfit.fit_wrapper import fit, fit_config_file
+from imfit.model import ModelDescription
 
 def read_image(fname):
     import pyfits
@@ -22,7 +23,7 @@ for i in xrange(1):
         mask=mask,
         noise=noise,
         psf=psf,
-        configFileName='lala/config_sersic_K0846.dat',
+        model=ModelDescription(),
         nCombined=1,
         expTime=1.0,
         gain=1.0,
@@ -30,3 +31,14 @@ for i in xrange(1):
         originalSky=0.0,
         ftol=1.0e-8)
 
+    fit_config_file(image=image,
+                    mask=mask,
+                    noise=noise,
+                    psf=psf,
+                    configFileName='lala/config_sersic_K0846.dat',
+                    nCombined=1,
+                    expTime=1.0,
+                    gain=1.0,
+                    readNoise=0.0,
+                    originalSky=0.0,
+                    ftol=1.0e-8)

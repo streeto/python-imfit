@@ -18,12 +18,15 @@ noise = read_image('lala/K0846_0.3.6_qNoise.fits')
 mask = read_image('lala/K0846_0.3.6_mask.fits')
 psf = read_image('lala/psf_moffat36.fits')
 
+model = ModelDescription.load('lala/config_sersic_K0846.dat')
+print model
+
 for i in xrange(1):
     fit(image=image,
         mask=mask,
         noise=noise,
         psf=psf,
-        model=ModelDescription(),
+        model=model,
         nCombined=1,
         expTime=1.0,
         gain=1.0,

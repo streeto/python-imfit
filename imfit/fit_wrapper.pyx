@@ -11,16 +11,19 @@ cimport numpy as np
 import numpy as np
 from os import path
 
+import cython
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp cimport bool
 from libc.stdlib cimport calloc, free 
 
 
-def fit(np.ndarray[np.double_t, ndim=2] image,
-        np.ndarray[np.double_t, ndim=2] mask,
-        np.ndarray[np.double_t, ndim=2] noise,
-        np.ndarray[np.double_t, ndim=2] psf,
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def fit(np.ndarray[np.double_t, ndim=2, mode='c'] image,
+        np.ndarray[np.double_t, ndim=2, mode='c'] mask,
+        np.ndarray[np.double_t, ndim=2, mode='c'] noise,
+        np.ndarray[np.double_t, ndim=2, mode='c'] psf,
         model,
         int nCombined,
         double expTime,
@@ -28,7 +31,7 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
         double readNoise,
         double originalSky,
         double ftol,
-        int verbose=1,
+        int verbose=-1,
         int errorType=WEIGHTS_ARE_SIGMAS,
         int maskFormat=MASK_ZERO_IS_GOOD):
     '''
@@ -51,10 +54,10 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     cdef mp_par *parameterInfo
     cdef int status
     cdef int i
-     
+    
     theModel = new ModelObject()
     theModel.SetMaxThreads(2)     
-     
+    
     status = AddFunctions(theModel, model.functionList(), model.functionSetIndices(), True)
     if status < 0:
         print '*** WARNING: Failure in AddFunctions!\n\n'
@@ -64,29 +67,33 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     
     # Set up parameter vector(s), now that we know total # parameters
     nParamsTot = nFreeParams = theModel.GetNParams();
-    print '%d total parameters' % nParamsTot
+    if verbose >= 0:
+        print '%d total parameters' % nParamsTot
     if nParamsTot != len(parameterList):
         print '*** WARNING: number of input parameters (%d) does not equal required number of parameters for specified functions (%d)!' % (len(parameterList), nParamsTot)
         return
- 
-    image = np.ascontiguousarray(image).copy()
+
+    # The routines change the values of the pixels, not very nice.
+    image = image.copy()
     nRows = image.shape[0]
     nColumns = image.shape[1]
     nPixels_tot = nColumns * nRows
     allPixels = &image[0,0]
-    print 'nRows = %d, nColumns = %d' % (nRows, nColumns)
-     
-    mask = np.ascontiguousarray(mask).copy()
+
+    if verbose >= 0:
+        print 'nRows = %d, nColumns = %d' % (nRows, nColumns)
+    
+    mask = mask.copy()
     nMaskRows = mask.shape[0]
     nMaskColumns = mask.shape[1]
     allMaskPixels = &mask[0,0]
- 
-    noise = np.ascontiguousarray(noise).copy()
+
+    noise = noise.copy()
     nErrRows = noise.shape[0]
     nErrColumns = noise.shape[1]
     allErrorPixels = &noise[0,0]
- 
-    psf = np.ascontiguousarray(psf).copy()
+
+    psf = psf.copy()
     nRows_psf = psf.shape[0]
     nColumns_psf = psf.shape[1]
     nPixels_psf = nColumns_psf * nRows_psf
@@ -102,7 +109,8 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
                            maskFormat)
     theModel.ApplyMask()
 
-    theModel.PrintDescription()
+    if verbose >= 0:
+        theModel.PrintDescription()
 
     '''
     START OF MINIMIZATION-ROUTINE-RELATED CODE
@@ -115,7 +123,8 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     there are actual parameter constraints; if not, mpfitParameterConstraints is set = NULL,
     since that's what mpfit() expects when there are no constraints.
     '''
-    print 'Setting up parameter information array ...'
+    if verbose >= 0:
+        print 'Setting up parameter information array ...'
     parameterInfo = <mp_par *> calloc(nParamsTot, sizeof(mp_par))
     paramsVect = <double *> calloc(nParamsTot, sizeof(double))
 
@@ -132,8 +141,9 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
         # Copy initial parameter values into C array
         paramsVect[i] = param.value
     
-    nDegFreedom = theModel.GetNValidPixels() - nFreeParams
-    print '%d free parameters (%d degrees of freedom)' % (nFreeParams, nDegFreedom)
+    if verbose >= 0:
+        nDegFreedom = theModel.GetNValidPixels() - nFreeParams
+        print '%d free parameters (%d degrees of freedom)' % (nFreeParams, nDegFreedom)
     
     # Check the model.
 #     PrintResults(paramsVect, <double*>0, <mp_result*>0, theModel, nFreeParams, parameterInfo, 1)
@@ -143,17 +153,22 @@ def fit(np.ndarray[np.double_t, ndim=2] image,
     status = LevMarFit(nParamsTot, nFreeParams, nPixels_tot, paramsVect, parameterInfo,
                        theModel, ftol, paramLimitsExist, verbose)
  
-    # TODO: return a ModelConfig with the fitted result.
+    # TODO: return a ModelDescription with the fitted result.
 
+    for i, p in enumerate(parameterList):
+        p.value = paramsVect[i]
+        
+#     values = []
+#     for i in xrange(len(parameterList)):
+#         values.append(paramsVect[i])
+# 
+#     model.updateParamValues(values)
+    
     free(paramsVect)
     free(parameterInfo)
-    
     del theModel
-   
-    print 'Done!'
-    
-    
-    
+
+
     
 def fit_config_file(np.ndarray[np.double_t, ndim=2] image,
                     np.ndarray[np.double_t, ndim=2] mask,
@@ -166,7 +181,7 @@ def fit_config_file(np.ndarray[np.double_t, ndim=2] image,
                     double readNoise,
                     double originalSky,
                     double ftol,
-                    int verbose=1,
+                    int verbose=-1,
                     int errorType=WEIGHTS_ARE_SIGMAS,
                     int maskFormat=MASK_ZERO_IS_GOOD):
     '''

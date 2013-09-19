@@ -19,11 +19,11 @@ class ParameterDescription(object):
         
     def __str__(self):
         if self.fixed:
-            return '%s    %d     fixed' % (self.name, self.value)
+            return '%s    %f     fixed' % (self.name, self.value)
         elif self.limits is not None:
-            return '%s    %d     %d,%d' % (self.name, self.value, self.limits[0], self.limits[1])
+            return '%s    %f     %f,%f' % (self.name, self.value, self.limits[0], self.limits[1])
         else:
-            return '%s    %d' % (self.name, self.value)
+            return '%s    %f' % (self.name, self.value)
             
 ################################################################################
 

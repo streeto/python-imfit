@@ -5,7 +5,7 @@ Created on Sep 17, 2013
 '''
 
 
-from imfit.fit_wrapper import ModelObjectWrapper, fit_wrapper
+from imfit.lib_wrapper import ModelObjectWrapper, fit_wrapper
 from imfit.model import ModelDescription
 
 def read_image(fname):

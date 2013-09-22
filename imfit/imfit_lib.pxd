@@ -50,6 +50,8 @@ cdef extern from 'imfit/model_object.h':
 cdef extern from 'imfit/add_functions.h':
     int AddFunctions(ModelObject *theModel, vector[string] &functionNameList,
                      vector[int] &functionSetIndices, bool subamplingFlag)
+    int GetFunctionParameters(string &functionName, vector[string] &parameterNameList)
+    void GetFunctionNames(vector[string] &functionNameList)
 
 
 cdef extern from 'imfit/definitions.h':

@@ -6,8 +6,9 @@ Created on Sep 15, 2013
 
 from .imfit_lib cimport ModelObject, mp_par, configOptions
 from .imfit_lib cimport ReadConfigFile, AddFunctions, LevMarFit, PrintResults, mp_result
+from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
-from .model import ModelDescription
+from .model import ModelDescription, FunctionDescription, ParameterDescription
 
 cimport numpy as np
 import numpy as np
@@ -19,6 +20,26 @@ from libcpp.vector cimport vector
 from libcpp cimport bool
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
+
+
+def getFunctionNames():
+    cdef vector[string] func_names
+    GetFunctionNames_lib(func_names)
+    return [f for f in func_names]
+
+
+def getFunctionDescription(func_name):
+    cdef int status
+    cdef string func_name_str = func_name
+    cdef vector[string] parameters
+    status = GetFunctionParameters(func_name_str, parameters)
+    if status < 0:
+        raise ValueError('Function %s not found.' % func_name)
+    func_desc = FunctionDescription(func_name)
+    for p in parameters:
+        param_desc = ParameterDescription(p, value=0.0)
+        func_desc.addParameter(param_desc)
+    return func_desc
 
 
 @cython.boundscheck(False)

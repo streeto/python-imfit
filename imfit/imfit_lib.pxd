@@ -15,19 +15,6 @@ cdef extern from 'imfit/param_struct.h':
                             # being fitted)
 
 
-cdef extern from 'imfit/config_file_parser.h':
-    ctypedef struct configOptions:
-        vector[string] optionNames
-        vector[string] optionValues
-        int  nOptions
-
-    int ReadConfigFile(string& configFileName, bool mode2D, vector[string]& functionList,
-                       vector[double]& parameterList, vector[mp_par]& parameterLimits,
-                       vector[int]& setStartFunctionNumber, bool& parameterLimitsFound,
-                       configOptions& configFileOptions)
-
-
-
 cdef extern from 'imfit/model_object.h':
     cdef cppclass ModelObject:
         # WARNING: calling SetupModelImage and AddImageDataVector in the
@@ -72,14 +59,4 @@ cdef extern from 'imfit/levmar_fit.h':
     int LevMarFit(int nParamsTot, int nFreeParams, int nDataVals, double *paramVector, 
                   mp_par *parameterLimits, ModelObject *theModel, double ftol, 
                   bool paramLimitsExist, int verbose)
-
-
-cdef extern from 'imfit/mpfit_cpp.h':
-    ctypedef struct mp_result
-
-
-cdef extern from 'imfit/print_results.h':
-    void PrintResults(double *params, double *xact, mp_result *result, ModelObject *model,
-                      int nFreeParameters, mp_par *parameterInfo, int fitStatus)
-    
 

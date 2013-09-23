@@ -6,6 +6,7 @@ Created on Sep 20, 2013
 from .model import ModelDescription
 from .lib_wrapper import ModelObjectWrapper
 import numpy as np
+from copy import deepcopy
 
 __all__ = ['fitter']
 
@@ -15,27 +16,23 @@ class fitter(object):
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
         self._modelDescr = model_descr
-#         self._paramDtype = self._getParamDtype()
         self._psf = psf
+        self._mask = None
+        self._modelObject = None    
     
-    
-    def _getParamDtype(self):
-        dt = [(p.name, 'float64') for p in self._modelDescr.parameterList()]
-        return np.dtype(dt)
-    
-    
-    @property
-    def paramDtype(self):
-        return self._paramDtype
+
+    def getModelDescription(self):
+        return deepcopy(self._modelDescr)
 
 
-    @property
-    def parameters(self):
-#         return np.array(self._modelObject.values(), dtype=self._paramDtype)
-        return np.array(self._modelObject.values())
+    def getRawParameters(self):
+        return np.array(self._modelObject.getRawParameters())
 
 
     def _setupModel(self):
+        if self._modelObject is not None:
+            # FIXME: Find a better way to free cython resources.
+            self._modelObject.close()
         self._modelObject = ModelObjectWrapper(self._modelDescr)
         if self._psf is not None:
             self._modelObject.setPSF(np.asarray(self._psf))
@@ -51,10 +48,20 @@ class fitter(object):
             mask = np.ones_like(image)
         else:
             mask = mask.astype('float64')
+            self._mask = mask.astype('bool')
+
         if isinstance(noise, np.ma.MaskedArray):
             noise = noise.filled()
 
         self._modelObject.setData(image, noise, mask,
                                   n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
         self._modelObject.fit()
+        
+        
+    def getModelImage(self):
+        image = self._modelObject.getModelImage()
+        if self._mask is None:
+            return image
+        else:
+            return np.ma.array(image, mask=self._mask)
         

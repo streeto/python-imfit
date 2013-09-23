@@ -64,8 +64,11 @@ def fit3():
     psf = read_image('imfit/tests/data/psf_moffat36.fits')
     model_desc = ModelDescription.load('imfit/tests/data/config_sersic_K0846.dat')
     fit = imfitter(model_desc, psf)
-    fit(image, noise, mask)
-    print fit.parameters
+    for i in xrange(1):
+        print '#'*10, i
+        fit(image, noise, mask)
+        print fit.getRawParameters()
+        print fit.getModelDescription()    
     
 
 for i in xrange(1):

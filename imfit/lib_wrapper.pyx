@@ -4,7 +4,7 @@ Created on Sep 15, 2013
 @author: andre
 '''
 
-from .imfit_lib cimport ModelObject, mp_par, configOptions
+from .imfit_lib cimport ModelObject, mp_par
 from .imfit_lib cimport ReadConfigFile, AddFunctions, LevMarFit, PrintResults, mp_result
 from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
@@ -21,12 +21,14 @@ from libcpp cimport bool
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
 
+################################################################################
 
 def getFunctionNames():
     cdef vector[string] func_names
     GetFunctionNames_lib(func_names)
     return [f for f in func_names]
 
+################################################################################
 
 def getFunctionDescription(func_name):
     cdef int status
@@ -41,6 +43,7 @@ def getFunctionDescription(func_name):
         func_desc.addParameter(param_desc)
     return func_desc
 
+################################################################################
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -55,7 +58,7 @@ cdef double *alloc_copy_from_ndarray(np.ndarray[np.double_t, ndim=2, mode='c'] o
     memcpy(dest, &orig[0,0], imsize)
     return dest
 
-
+################################################################################
 
 cdef class ModelObjectWrapper(object):
 
@@ -65,14 +68,17 @@ cdef class ModelObjectWrapper(object):
     cdef bool _paramLimitsExist
     cdef int _nParams
     cdef int _nFreeParams
-    cdef int _nPixels
+    cdef int _nPixels, _nRows, _nCols
     
     cdef double *_imageData, *_errorData, *_maskData, *_psfData
-
+    cdef bool _inputDataLoaded
+    cdef bool _freed
     
     cdef object _modelDescr
     cdef object _parameterList
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def __init__(self, model_descr):
         self._paramLimitsExist = False
         self._paramInfo = NULL
@@ -83,6 +89,8 @@ cdef class ModelObjectWrapper(object):
         self._errorData = NULL
         self._maskData = NULL
         self._psfData = NULL
+        self._inputDataLoaded = False
+        self._freed = False
         
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
@@ -157,35 +165,31 @@ cdef class ModelObjectWrapper(object):
         cdef int n_pixels
 
         # Maybe this was called before.
-        if self._imageData != NULL:
-            raise ValueError('Data already set.')
+        if self._inputDataLoaded:
+            raise RuntimeError('Data already set.')
+        if self._freed:
+            raise RuntimeError('Objects already freed.')
             
         self._imageData = alloc_copy_from_ndarray(image)
         self._errorData = alloc_copy_from_ndarray(noise)
         self._maskData = alloc_copy_from_ndarray(mask)
         
-        n_rows = image.shape[0]
-        n_cols = image.shape[1]
-        self._nPixels = n_rows * n_cols
-        print 'nRows = %d, nColumns = %d' % (n_rows, n_cols)
+        self._nRows = image.shape[0]
+        self._nCols = image.shape[1]
+        self._nPixels = self._nRows * self._nCols
             
-        self._model.AddImageDataVector(self._imageData, n_cols, n_rows)
+        self._model.AddImageDataVector(self._imageData, self._nCols, self._nRows)
         self._model.AddImageCharacteristics(gain, read_noise, exp_time, n_combined, original_sky)
-        self._model.AddErrorVector(self._nPixels, n_cols, n_rows, self._errorData, error_type)
-        self._model.AddMaskVector(self._nPixels, n_cols, n_rows, self._maskData, mask_format)
+        self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
+        self._model.AddMaskVector(self._nPixels, self._nCols, self._nRows, self._maskData, mask_format)
         self._model.ApplyMask()
+        self._inputDataLoaded = True
 
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def fit(self,
-            ftol=1e-8,
-            verbose=-1):
-                  
-        print 'Calling Levenberg-Marquardt solver ...'
-        status = LevMarFit(self._nParams, self._nFreeParams, self._nPixels, self._paramVect, self._paramInfo,
-                           self._model, ftol, self._paramLimitsExist, verbose)    
-        self._updateParamValues() 
+    def fit(self, ftol=1e-8, verbose=-1):
+        LevMarFit(self._nParams, self._nFreeParams, self._nPixels, self._paramVect, self._paramInfo,
+                  self._model, ftol, self._paramLimitsExist, verbose)    
+        self._updateParamValues()
     
     
     def _updateParamValues(self):
@@ -193,16 +197,30 @@ cdef class ModelObjectWrapper(object):
             p.value = self._paramVect[i]
     
         
-    def values(self):
+    def getRawParameters(self):
         vals = []
         for i in xrange(self._nParams):
             vals.append(self._paramVect[i])
         return vals
             
             
-    def __del__(self):
+    def getModelImage(self):
+        cdef double *model_image
+        cdef np.ndarray[np.double_t, ndim=2, mode='c'] output_array
+        cdef int imsize = self._nPixels * sizeof(double)
+
+        if self._inputDataLoaded:
+            self._model.SetupModelImage(self._nCols, self._nRows)
+        model_image = self._model.GetModelImageVector()
+        output_array = np.empty((self._nRows, self._nCols), dtype='float64')
+        memcpy(&output_array[0,0], model_image, imsize)
+
+        return output_array
+        
+        
+    def close(self):
         if self._model != NULL:
-            del self.theModel
+            del self._model
         if self._paramInfo != NULL:
             free(self._paramInfo)
         if self._paramVect != NULL:
@@ -216,11 +234,10 @@ cdef class ModelObjectWrapper(object):
             free(self._maskData)
         if self._psfData != NULL:
             free(self._psfData)
+        self._freed = True
     
     
-    def __str__(self):
-        return str(self._modelDescr)
-
+################################################################################
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

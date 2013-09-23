@@ -30,7 +30,12 @@ cdef extern from 'imfit/config_file_parser.h':
 
 cdef extern from 'imfit/model_object.h':
     cdef cppclass ModelObject:
+        # WARNING: calling SetupModelImage and AddImageDataVector in the
+        # same ModelObject instance (or any of them more than once) will
+        # cause memory leak!
+        void SetupModelImage(int nImageColumns, int nImageRows)
         void AddImageDataVector(double *image, int n_columns, int n_rows)
+        
         void AddImageCharacteristics(double imageGain, double readoutNoise, double expTime, 
                                      int nCombinedImages, double originalSkyBackground)
         void AddErrorVector(int nDataValues, int nImageColumns, int nImageRows,
@@ -44,6 +49,7 @@ cdef extern from 'imfit/model_object.h':
         int GetNParams()
         int GetNValidPixels()
         void PrintDescription()
+        double *GetModelImageVector()
         
 
 

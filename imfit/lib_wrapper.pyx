@@ -73,7 +73,7 @@ cdef class ModelObjectWrapper(object):
     cdef object _modelDescr
     cdef object _parameterList
 
-    def __init__(self, model_description):
+    def __init__(self, model_descr):
         self._paramLimitsExist = False
         self._paramInfo = NULL
         self._paramVect = NULL
@@ -84,9 +84,9 @@ cdef class ModelObjectWrapper(object):
         self._maskData = NULL
         self._psfData = NULL
         
-        if not isinstance(model_description, ModelDescription):
-            raise ValueError('model_description must be a ModelDescription object.')
-        self._modelDescr = model_description
+        if not isinstance(model_descr, ModelDescription):
+            raise ValueError('model_descr must be a ModelDescription object.')
+        self._modelDescr = model_descr
         self._parameterList = self._modelDescr.parameterList()
 
         cdef int status = 0
@@ -183,7 +183,6 @@ cdef class ModelObjectWrapper(object):
             verbose=-1):
                   
         print 'Calling Levenberg-Marquardt solver ...'
-        print self._nParams, self._nFreeParams, self._nPixels, ftol, self._paramLimitsExist
         status = LevMarFit(self._nParams, self._nFreeParams, self._nPixels, self._paramVect, self._paramInfo,
                            self._model, ftol, self._paramLimitsExist, verbose)    
         self._updateParamValues() 
@@ -194,6 +193,13 @@ cdef class ModelObjectWrapper(object):
             p.value = self._paramVect[i]
     
         
+    def values(self):
+        vals = []
+        for i in xrange(self._nParams):
+            vals.append(self._paramVect[i])
+        return vals
+            
+            
     def __del__(self):
         if self._model != NULL:
             del self.theModel

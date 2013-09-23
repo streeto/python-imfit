@@ -5,8 +5,9 @@ Created on Sep 17, 2013
 '''
 
 
+from imfit import ModelDescription
+from imfit import fitter as imfitter 
 from imfit.lib_wrapper import ModelObjectWrapper, fit_wrapper
-from imfit.model import ModelDescription
 
 def read_image(fname):
     import pyfits
@@ -56,6 +57,17 @@ def fit2():
 
 
 
+def fit3():
+    image = read_image('imfit/tests/data/K0846_0.3.6_qSignal.fits')
+    noise = read_image('imfit/tests/data/K0846_0.3.6_qNoise.fits')
+    mask = read_image('imfit/tests/data/K0846_0.3.6_mask.fits')
+    psf = read_image('imfit/tests/data/psf_moffat36.fits')
+    model_desc = ModelDescription.load('imfit/tests/data/config_sersic_K0846.dat')
+    fit = imfitter(model_desc, psf)
+    fit(image, noise, mask)
+    print fit.parameters
+    
+
 for i in xrange(1):
     print '#'*50
     print 'Model wrapper:'
@@ -63,3 +75,6 @@ for i in xrange(1):
     print '#'*50
     print 'fit_wrapper:'
     fit2()
+    print '#'*50
+    print 'fitter:'
+    fit3()

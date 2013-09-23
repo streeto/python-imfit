@@ -5,13 +5,22 @@ Created on Sep 18, 2013
 '''
 
 
-__all__ = ['ParameterDescription', 'FunctionDescription', 'FunctionSetDescription']
+__all__ = ['ModelDescription', 'ParameterDescription', 'FunctionDescription', 'FunctionSetDescription']
 
 ################################################################################
 
 class ParameterDescription(object):
     def __init__(self, name, value, limits=None, fixed=False):
-        self.name = name
+        self._name = name
+        self.setValue(value, limits, fixed)
+        
+    
+    @property
+    def name(self):
+        return self._name
+    
+    
+    def setValue(self, value, limits=None, fixed=False):
         self.value = value
         self.fixed = fixed
         self.limits = limits
@@ -51,6 +60,14 @@ class FunctionDescription(object):
         lines.extend(str(p) for p in self._parameters)
         return '\n'.join(lines)
 
+    
+    def __getitem__(self, key):
+        if not isinstance(key, str):
+            raise KeyError('Parameter must be a string.')
+        for p in self._parameters:
+            if key == p.name:
+                return p
+        raise KeyError('Parameter %s not found.' % key)
 ################################################################################
 
 class FunctionSetDescription(object):
@@ -98,27 +115,6 @@ class ModelDescription(object):
         self.options = options
 
 
-    @classmethod
-    def example(cls):
-        x0 = ParameterDescription('X0', 36.0, [25, 45])
-        y0 = ParameterDescription('Y0', 32.0, [25, 45])
-        fs = FunctionSetDescription(x0, y0)
-        sersic = FunctionDescription('Sersic', [ParameterDescription('PA', 93.0217, [0, 180]),
-                                                ParameterDescription('ell', 0.37666, [0, 1]),
-                                                ParameterDescription('n', 4, fixed=True),
-                                                ParameterDescription('I_e', 1, [0, 10]),
-                                                ParameterDescription('r_e', 25, [0, 100]),
-                                                ])
-        exponential = FunctionDescription('Exponential', [ParameterDescription('PA', 93.0217, [0, 180]),
-                                                          ParameterDescription('ell', 0.37666, [0, 1]),
-                                                          ParameterDescription('I_0', 1, [0, 10]),
-                                                          ParameterDescription('h', 25, [0, 100])
-                                                          ])
-        fs.addFunction(sersic)
-        fs.addFunction(exponential)
-        return cls([fs])
-        
-    
     @classmethod
     def load(cls, fname):
         from .config import parse_config_file

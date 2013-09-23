@@ -25,6 +25,12 @@ try:
 except ImportError:
     __githash__ = ''
 
+
+from model import *
+from fitting import *
+from lib_wrapper import getFunctionNames, getFunctionDescription
+
+
 # set up the test command
 def _get_test_runner():
     from astropy.tests.helper import TestRunner

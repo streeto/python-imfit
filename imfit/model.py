@@ -6,7 +6,8 @@ Created on Sep 18, 2013
 from copy import copy, deepcopy
 
 
-__all__ = ['ModelDescription', 'ParameterDescription', 'FunctionDescription', 'FunctionSetDescription']
+__all__ = ['SimpleModelDescription', 'ModelDescription',
+           'ParameterDescription', 'FunctionDescription', 'FunctionSetDescription']
 
 ################################################################################
 
@@ -61,7 +62,7 @@ class FunctionDescription(object):
 
     def __str__(self):
         lines = []
-        lines.append('FUNCTION %s' % self.name)
+        lines.append('FUNCTION %s # %s' % (self.funcType, self.name))
         lines.extend(str(p) for p in self._parameters)
         return '\n'.join(lines)
 
@@ -80,8 +81,9 @@ class FunctionDescription(object):
     
 
     def __deepcopy__(self, memo):
-        f = FunctionDescription(self.name, self.funcType)
+        f = FunctionDescription(self.funcType, self.name)
         f._parameters = deepcopy(self._parameters)
+        return f
 
 ################################################################################
 
@@ -243,6 +245,7 @@ class ModelDescription(object):
     def __deepcopy__(self, memo):
         model = ModelDescription()
         model._functionSets = deepcopy(self._functionSets)
+        return model
         
 ################################################################################
 

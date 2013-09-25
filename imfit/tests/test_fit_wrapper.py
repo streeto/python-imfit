@@ -15,7 +15,6 @@ def read_image(fname):
     return arr.astype('float64')
 
 
-
 def fit1():
     image = read_image('imfit/tests/data/K0846_0.3.6_qSignal.fits')
     noise = read_image('imfit/tests/data/K0846_0.3.6_qNoise.fits')
@@ -33,7 +32,6 @@ def fit1():
     for i in xrange(1):
         print '#'*10, i
         model.fit(verbose=1)
-    
 
 
 def fit3():
@@ -42,12 +40,12 @@ def fit3():
     mask = read_image('imfit/tests/data/K0846_0.3.6_mask.fits')
     psf = read_image('imfit/tests/data/psf_moffat36.fits')
     model_desc = ModelDescription.load('imfit/tests/data/config_sersic_K0846.dat')
-    fit = imfitter(model_desc, psf)
+    my_imfit = Imfit(model_desc, psf)
     for i in xrange(1):
         print '#'*10, i
-        fit(image, noise, mask)
-        print fit.getRawParameters()
-        print fit.getModelDescription()    
+        my_imfit.fit(image, noise, mask)
+        print my_imfit.getRawParameters()
+        print my_imfit.getModelDescription()
     
 
 for i in xrange(1):

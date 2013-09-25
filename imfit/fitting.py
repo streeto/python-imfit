@@ -8,9 +8,9 @@ from .lib_wrapper import ModelObjectWrapper
 import numpy as np
 from copy import deepcopy
 
-__all__ = ['fitter']
+__all__ = ['Imfit']
 
-class fitter(object):
+class Imfit(object):
     
     def __init__(self, model_descr, psf=None):
         if not isinstance(model_descr, ModelDescription):
@@ -38,7 +38,7 @@ class fitter(object):
             self._modelObject.setPSF(np.asarray(self._psf))
             
     
-    def __call__(self, image, noise, mask=None):
+    def fit(self, image, noise, mask=None):
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):
             image = image.filled()

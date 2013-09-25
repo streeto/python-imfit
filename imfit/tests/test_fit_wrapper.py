@@ -5,9 +5,9 @@ Created on Sep 17, 2013
 '''
 
 
-from imfit import ModelDescription
-from imfit import fitter as imfitter 
-from imfit.lib_wrapper import ModelObjectWrapper
+from imfit import ModelDescription, function_description
+from imfit import Imfit
+from imfit.lib_wrapper import ModelObjectWrapper 
 
 def read_image(fname):
     import pyfits

@@ -23,21 +23,20 @@ from libc.string cimport memcpy
 
 ################################################################################
 
-def getFunctionNames():
+def function_names():
     cdef vector[string] func_names
     GetFunctionNames_lib(func_names)
     return [f for f in func_names]
 
 ################################################################################
 
-def getFunctionDescription(func_name):
+def function_description(func_type, func_name=None):
     cdef int status
-    cdef string func_name_str = func_name
     cdef vector[string] parameters
-    status = GetFunctionParameters(func_name_str, parameters)
+    status = GetFunctionParameters(func_type, parameters)
     if status < 0:
         raise ValueError('Function %s not found.' % func_name)
-    func_desc = FunctionDescription(func_name)
+    func_desc = FunctionDescription(func_type, func_name)
     for p in parameters:
         param_desc = ParameterDescription(p, value=0.0)
         func_desc.addParameter(param_desc)

@@ -26,11 +26,6 @@ except ImportError:
     __githash__ = ''
 
 
-from model import *
-from fitting import *
-from lib_wrapper import getFunctionNames, getFunctionDescription
-
-
 # set up the test command
 def _get_test_runner():
     from astropy.tests.helper import TestRunner
@@ -112,6 +107,10 @@ def test(package=None, test_path=None, args=None, plugins=None,
         coverage=coverage, open_files=open_files, **kwargs)
 
 if not _ASTROPY_SETUP_:
+
+    from model import *
+    from fitting import *
+    from lib_wrapper import function_names, function_description
 
     import os
     from warnings import warn

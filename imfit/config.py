@@ -30,15 +30,17 @@ def parse_config(lines):
     model = ModelDescription()
     
     block_start = 0
+    id_fs = 0
     for i in xrange(block_start, len(lines)):
         if lines[i].startswith(x0_str):
             if block_start == 0: 
                 options = read_options(lines[block_start:i])
                 model.options.update(options)
             else:
-                model.addFunctionSet(read_function_set(lines[block_start:i]))
+                model.addFunctionSet(read_function_set('fs%2d' % id_fs, lines[block_start:i]))
+                id_fs += 1
             block_start = i
-    model.addFunctionSet(read_function_set(lines[block_start:i+1]))
+    model.addFunctionSet(read_function_set('fs%2d' % id_fs, lines[block_start:i+1]))
     return model
 
 ################################################################################
@@ -72,13 +74,15 @@ def read_options(lines):
     
 ################################################################################
 
-def read_function_set(lines):
+def read_function_set(name, lines):
     # A function set starts with X0 and Y0 parameters.
     x0 = read_parameter(lines[0])
     y0 = read_parameter(lines[1])
     if x0.name != x0_str or y0.name != y0_str:
         raise ValueError('A function set must begin with the parameters X0 and Y0.')
-    fs = FunctionSetDescription(x0, y0)
+    fs = FunctionSetDescription(name)
+    fs.x0 = x0
+    fs.y0 = y0
     block_start = 2
     for i in xrange(block_start, len(lines)):
         # Functions for a given set start with FUNCTION.

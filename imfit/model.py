@@ -3,6 +3,7 @@ Created on Sep 18, 2013
 
 @author: andre
 '''
+from copy import copy, deepcopy
 
 
 __all__ = ['ModelDescription', 'ParameterDescription', 'FunctionDescription', 'FunctionSetDescription']
@@ -37,11 +38,15 @@ class ParameterDescription(object):
 ################################################################################
 
 class FunctionDescription(object):
-    def __init__(self, name, parameters=None):
+    def __init__(self, func_type, name=None, parameters=None):
+        if name is None:
+            name = func_type
+        self.funcType = func_type
         self.name = name
-        if parameters is None:
-            parameters = []
-        self._parameters = parameters
+        self._parameters = []
+        if parameters is not None:
+            for p in parameters:
+                self.addParameter(p)
         
         
     def addParameter(self, p):
@@ -61,6 +66,10 @@ class FunctionDescription(object):
         return '\n'.join(lines)
 
     
+    def __getattr__(self, attr):
+        return self[attr]
+    
+    
     def __getitem__(self, key):
         if not isinstance(key, str):
             raise KeyError('Parameter must be a string.')
@@ -68,25 +77,42 @@ class FunctionDescription(object):
             if key == p.name:
                 return p
         raise KeyError('Parameter %s not found.' % key)
+    
+
+    def __deepcopy__(self, memo):
+        f = FunctionDescription(self.name, self.funcType)
+        f._parameters = deepcopy(self._parameters)
+
 ################################################################################
 
 class FunctionSetDescription(object):
-    def __init__(self, x0, y0, functions=None):
-        self.x0 = x0
-        self.y0 = y0
-        if functions is None:
-            functions = []
-        self._functions = functions
+    def __init__(self, name, functions=None):
+        self.name = name
+        self.x0 = ParameterDescription('X0', 0.0)
+        self.y0 = ParameterDescription('Y0', 0.0)
+        self._functions = []
+        if functions is not None:
+            for f in functions:
+                self.addFunction(f)
         
         
     def addFunction(self, f):
         if not isinstance(f, FunctionDescription):
             raise ValueError('func is not a Function object.')
+        if self._contains(f.name):
+            raise KeyError('Function named %s already exists.' % f.name)
         self._functions.append(f)
-        
-        
+    
+    
+    def _contains(self, name):
+        for f in self._functions:
+            if f.name == name:
+                return True
+        return False
+    
+    
     def functionList(self):
-        return [f.name for f in self._functions]
+        return [f.funcType for f in self._functions]
     
     
     def parameterList(self):
@@ -104,30 +130,72 @@ class FunctionSetDescription(object):
         lines.append(str(self.y0))
         lines.extend(str(f) for f in self._functions)
         return '\n'.join(lines)
+    
+    def __getattr__(self, attr):
+        return self[attr]
+    
+    
+    def __getitem__(self, key):
+        if not isinstance(key, str):
+            raise KeyError('Function must be a string.')
+        for f in self._functions:
+            if key == f.name:
+                return f
+        raise KeyError('Function %s not found.' % key)
+    
+    
+    def __deepcopy__(self, memo):
+        fs = FunctionSetDescription(self.name)
+        fs.x0 = copy(self.x0)
+        fs.y0 = copy(self.y0)
+        fs._functions = deepcopy(self._functions)
+        return fs
         
 ################################################################################
         
 class ModelDescription(object):
     def __init__(self, function_sets=None, options={}):
-        if function_sets is None:
-            function_sets = []
-        self._functionSets = function_sets
-        self.options = options
+        self.options = {}
+        self.options.update(options)
+        self._functionSets = []
+        if function_sets is not None:
+            for fs in function_sets:
+                self.addFunctionSet(fs)
 
 
     @classmethod
     def load(cls, fname):
+        '''
+        Load a model description from a file. The syntax is the same
+        as the imfit config file.
+        '''
         from .config import parse_config_file
         return parse_config_file(fname)
     
     
     def addFunctionSet(self, fs):
+        '''
+        Add a function set to the model description.
+        '''
         if not isinstance(fs, FunctionSetDescription):
             raise ValueError('fs is not a FunctionSet object.')
+        if self._contains(fs.name):
+            raise KeyError('FunctionSet named %s already exists.' % fs.name)
         self._functionSets.append(fs)
     
     
+    def _contains(self, name):
+        for fs in self._functionSets:
+            if fs.name == name:
+                return True
+        return False
+    
+    
     def functionSetIndices(self):
+        '''
+        Returns the indices in the full parameters list such that
+        imfit can split the parameters for in the function sets.
+        '''
         indices = [0]
         for i in xrange(len(self._functionSets) - 1):
             indices.append(len(self.functionSets[i].functions))
@@ -135,6 +203,9 @@ class ModelDescription(object):
         
         
     def functionList(self):
+        '''
+        Returns the functions composing this model, as a list of strings.
+        '''
         functions = []
         for function_set in self._functionSets:
             functions.extend(function_set.functionList())
@@ -155,4 +226,47 @@ class ModelDescription(object):
         lines.extend(str(fs) for fs in self._functionSets)
         return '\n'.join(lines)
         
+
+    def __getattr__(self, attr):
+        return self[attr]
+    
+    
+    def __getitem__(self, key):
+        if not isinstance(key, str):
+            raise KeyError('FunctionSet must be a string.')
+        for fs in self._functionSets:
+            if key == fs.name:
+                return fs
+        raise KeyError('FunctionSet %s not found.' % key)
+    
+    
+    def __deepcopy__(self, memo):
+        model = ModelDescription()
+        model._functionSets = deepcopy(self._functionSets)
+        
 ################################################################################
+
+
+class SimpleModelDescription(ModelDescription):
+    def __init__(self):
+        super(SimpleModelDescription, self).__init__()
+        fs = FunctionSetDescription('fs')
+        self.addFunctionSet(fs)
+        
+        
+    @property
+    def x0(self):
+        return self._functionSets[0].x0
+        
+
+    @property
+    def y0(self):
+        return self._functionSets[0].y0
+    
+
+    def addFunction(self, f):
+        self._functionSets[0].addFunction(f)
+        
+        
+    def __getattr__(self, attr):
+        return self._functionSets[0][attr]

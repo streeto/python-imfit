@@ -38,12 +38,12 @@ class Imfit(object):
             self._modelObject.setPSF(np.asarray(self._psf))
             
     
-    def fit(self, image, noise, mask=None):
+    def fit(self, image, noise, mask=None, quiet=True):
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):
-            image = image.filled()
             if mask is None:
                 mask = image.mask.astype('float64')
+            image = image.filled().astype('float64')
         if mask is None:
             mask = np.ones_like(image)
         else:
@@ -51,11 +51,12 @@ class Imfit(object):
             self._mask = mask.astype('bool')
 
         if isinstance(noise, np.ma.MaskedArray):
-            noise = noise.filled()
+            noise = noise.filled().astype('float64')
 
         self._modelObject.setData(image, noise, mask,
                                   n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
-        self._modelObject.fit()
+        verbose = -1 if quiet else 1
+        self._modelObject.fit(verbose=verbose)
         
         
     def getModelImage(self, shape=None):

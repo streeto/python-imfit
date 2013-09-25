@@ -58,7 +58,12 @@ class Imfit(object):
         self._modelObject.fit()
         
         
-    def getModelImage(self):
+    def getModelImage(self, shape=None):
+        if self._modelObject is None:
+            self._setupModel()
+        if shape is not None:
+            self._modelObject.setupModelImage(shape)
+
         image = self._modelObject.getModelImage()
         if self._mask is None:
             return image

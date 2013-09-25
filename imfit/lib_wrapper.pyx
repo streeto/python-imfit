@@ -188,6 +188,17 @@ cdef class ModelObjectWrapper(object):
         self._inputDataLoaded = True
 
 
+    def setupModelImage(self, shape):
+        if self._inputDataLoaded:
+            raise Exception('Input data already loaded.')
+        self._nRows = shape[0]
+        self._nCols = shape[1]
+        self._nPixels = self._nRows * self._nCols
+        self._model.SetupModelImage(self._nCols, self._nRows)
+        self._model.CreateModelImage(self._paramVect)
+        self._inputDataLoaded = True
+        
+        
     def fit(self, ftol=1e-8, verbose=-1):
         LevMarFit(self._nParams, self._nFreeParams, self._nPixels, self._paramVect, self._paramInfo,
                   self._model, ftol, self._paramLimitsExist, verbose)    
@@ -211,8 +222,6 @@ cdef class ModelObjectWrapper(object):
         cdef np.ndarray[np.double_t, ndim=2, mode='c'] output_array
         cdef int imsize = self._nPixels * sizeof(double)
 
-        if self._inputDataLoaded:
-            self._model.SetupModelImage(self._nCols, self._nRows)
         model_image = self._model.GetModelImageVector()
         output_array = np.empty((self._nRows, self._nCols), dtype='float64')
         memcpy(&output_array[0,0], model_image, imsize)

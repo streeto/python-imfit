@@ -36,6 +36,7 @@ cdef extern from 'imfit/model_object.h':
         int GetNParams()
         int GetNValidPixels()
         void PrintDescription()
+        void CreateModelImage(double params[])
         double *GetModelImageVector()
         
 

@@ -30,13 +30,13 @@ def function_names():
 
 ################################################################################
 
-def function_description(func_type, func_name=None):
+def function_description(func_type, name=None):
     cdef int status
     cdef vector[string] parameters
     status = GetFunctionParameters(func_type, parameters)
     if status < 0:
-        raise ValueError('Function %s not found.' % func_name)
-    func_desc = FunctionDescription(func_type, func_name)
+        raise ValueError('Function %s not found.' % func_type)
+    func_desc = FunctionDescription(func_type, name)
     for p in parameters:
         param_desc = ParameterDescription(p, value=0.0)
         func_desc.addParameter(param_desc)

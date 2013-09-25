@@ -5,9 +5,10 @@ Created on Sep 17, 2013
 '''
 
 
-from imfit import ModelDescription, function_description
+from imfit import ModelDescription
 from imfit import Imfit
 from imfit.lib_wrapper import ModelObjectWrapper 
+from imfit.psf import moffat_psf
 
 def read_image(fname):
     import pyfits
@@ -38,7 +39,7 @@ def fit3():
     image = read_image('imfit/tests/data/K0846_0.3.6_qSignal.fits')
     noise = read_image('imfit/tests/data/K0846_0.3.6_qNoise.fits')
     mask = read_image('imfit/tests/data/K0846_0.3.6_mask.fits')
-    psf = read_image('imfit/tests/data/psf_moffat36.fits')
+    psf = moffat_psf(3.6, size=51)
     model_desc = ModelDescription.load('imfit/tests/data/config_sersic_K0846.dat')
     my_imfit = Imfit(model_desc, psf)
     for i in xrange(1):

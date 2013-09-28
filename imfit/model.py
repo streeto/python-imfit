@@ -82,7 +82,7 @@ class FunctionDescription(object):
 
     def __deepcopy__(self, memo):
         f = FunctionDescription(self.funcType, self.name)
-        f._parameters = deepcopy(self._parameters)
+        f._parameters = deepcopy(self._parameters, memo)
         return f
 
 ################################################################################
@@ -150,7 +150,7 @@ class FunctionSetDescription(object):
         fs = FunctionSetDescription(self.name)
         fs.x0 = copy(self.x0)
         fs.y0 = copy(self.y0)
-        fs._functions = deepcopy(self._functions)
+        fs._functions = deepcopy(self._functions, memo)
         return fs
         
 ################################################################################
@@ -243,8 +243,8 @@ class ModelDescription(object):
     
     
     def __deepcopy__(self, memo):
-        model = ModelDescription()
-        model._functionSets = deepcopy(self._functionSets)
+        model = type(self)()
+        model._functionSets = deepcopy(self._functionSets, memo)
         return model
         
 ################################################################################

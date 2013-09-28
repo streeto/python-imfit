@@ -74,3 +74,9 @@ class Imfit(object):
         else:
             return np.ma.array(image, mask=self._mask)
         
+        
+    def __del__(self):
+        if self._modelObject is not None:
+            # FIXME: Find a better way to free cython resources.
+            self._modelObject.close()
+         

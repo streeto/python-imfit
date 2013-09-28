@@ -42,17 +42,20 @@ class Imfit(object):
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):
             if mask is None:
-                mask = image.mask.astype('float64')
-            image = image.filled().astype('float64')
+                mask = image.mask
+            image = image.filled()
         if mask is None:
             mask = np.ones_like(image)
         else:
-            mask = mask.astype('float64')
             self._mask = mask.astype('bool')
 
         if isinstance(noise, np.ma.MaskedArray):
-            noise = noise.filled().astype('float64')
+            noise = noise.filled()
 
+        image = image.astype('float64')
+        noise = noise.astype('float64')
+        mask = mask.astype('float64')
+        
         self._modelObject.setData(image, noise, mask,
                                   n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
         verbose = -1 if quiet else 1

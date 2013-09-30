@@ -12,13 +12,14 @@ __all__ = ['Imfit']
 
 class Imfit(object):
     
-    def __init__(self, model_descr, psf=None):
+    def __init__(self, model_descr, psf=None, nproc=-1):
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
         self._modelDescr = model_descr
         self._psf = psf
         self._mask = None
-        self._modelObject = None    
+        self._modelObject = None
+        self._nproc = nproc
     
 
     def getModelDescription(self):
@@ -36,6 +37,8 @@ class Imfit(object):
         self._modelObject = ModelObjectWrapper(self._modelDescr)
         if self._psf is not None:
             self._modelObject.setPSF(np.asarray(self._psf))
+        if self._nproc > 0:
+            self._modelObject.setMaxThreads(self._nproc)
             
     
     def fit(self, image, noise, mask=None, quiet=True):

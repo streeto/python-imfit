@@ -107,6 +107,10 @@ cdef class ModelObjectWrapper(object):
         self._paramSetup(model_descr)
         
         
+    def setMaxThreads(self, int nproc):
+        self._model.SetMaxThreads(nproc)
+        
+        
     def _paramSetup(self, model_descr):
         self._parameterList = model_descr.parameterList()
         self._nParams = self._nFreeParams = self._model.GetNParams()

@@ -4,9 +4,10 @@ Created on Sep 15, 2013
 @author: andre
 '''
 
-from .imfit_lib cimport ModelObject, mp_par
+from .imfit_lib cimport ModelObject, mp_par, mp_result
 from .imfit_lib cimport AddFunctions, LevMarFit
 from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
+from .imfit_lib cimport AIC_corrected, BIC
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
 from .model import ModelDescription, FunctionDescription, ParameterDescription
 
@@ -69,9 +70,12 @@ cdef class ModelObjectWrapper(object):
     cdef int _nFreeParams
     cdef object _parameterList
     cdef int _nPixels, _nRows, _nCols
+    cdef mp_result _fitResult
+    cdef int _fitStatus
     
     cdef double *_imageData, *_errorData, *_maskData, *_psfData
     cdef bool _inputDataLoaded
+    cdef bool _fitted
     cdef bool _freed
     
 
@@ -88,7 +92,9 @@ cdef class ModelObjectWrapper(object):
         self._maskData = NULL
         self._psfData = NULL
         self._inputDataLoaded = False
+        self._fitted = False
         self._freed = False
+        self._fitStatus = 0
         
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
@@ -200,8 +206,11 @@ cdef class ModelObjectWrapper(object):
         
         
     def fit(self, ftol=1e-8, verbose=-1):
-        LevMarFit(self._nParams, self._nFreeParams, self._nPixels, self._paramVect, self._paramInfo,
-                  self._model, ftol, self._paramLimitsExist, verbose)    
+        self._fitStatus = LevMarFit(self._nParams, self._nFreeParams, self._nPixels,
+                                    self._paramVect, self._paramInfo,
+                                    self._model, ftol, self._paramLimitsExist,
+                                    self._fitResult, verbose)
+        self._fitted = True
         self._updateParamValues()
     
     
@@ -229,6 +238,64 @@ cdef class ModelObjectWrapper(object):
         return output_array
         
         
+    def getFitStatistic(self, mode='chi2'):
+        cdef double chi2
+        if self._fitted:
+            chi2 = self._fitResult.bestnorm
+        else:
+            chi2 = self._model.GetFitStatistic(self._paramVect)
+        if mode == 'chi2':
+            return chi2
+
+        cdef int n_valid_pix = self._model.GetNValidPixels()
+        cdef int deg_free = n_valid_pix - self._nFreeParams
+        if mode == 'reduced_chi2':
+            return chi2 / deg_free
+        if mode == 'AIC':
+            return AIC_corrected(chi2, self._nFreeParams, n_valid_pix, 1)
+        if mode == 'BIC':
+            return BIC(chi2, self._nFreeParams, n_valid_pix, 1);
+
+
+    @property
+    def nPegged(self):
+        if not self._fitted:
+            raise Exception('Not fitted yet.')
+        return self._fitResult.npegged
+    
+    
+    @property
+    def nIter(self):
+        if not self._fitted:
+            raise Exception('Not fitted yet.')
+        return self._fitResult.niter
+    
+    
+    @property
+    def nFev(self):
+        if not self._fitted:
+            raise Exception('Not fitted yet.')
+        return self._fitResult.nfev
+    
+
+    @property
+    def fitConverged(self):
+        # See Imfit/src/mpfit.cpp for magic numbers.
+        return self._fitted and (self._fitStatus > 0) and (self._fitStatus < 5)
+    
+    
+    @property
+    def fitError(self):
+        # See Imfit/src/mpfit.cpp for magic numbers.
+        return self._fitted and self._fitStatus <= 0
+    
+    
+    @property
+    def fitTerminated(self):
+        # See Imfit/src/mpfit.cpp for magic numbers.
+        return self._fitted and self._fitStatus >= 5
+    
+    
     def close(self):
         if self._model != NULL:
             del self._model

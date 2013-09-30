@@ -33,6 +33,15 @@ def fit1():
     for i in xrange(1):
         print '#'*10, i
         model.fit(verbose=1)
+        print 'chi2 = %f' % model.getFitStatistic(mode='chi2')
+        print 'Reduced chi2 = %f' % model.getFitStatistic(mode='reduced_chi2')
+        print 'AIC = %f' % model.getFitStatistic(mode='AIC')
+        print 'BIC = %f' % model.getFitStatistic(mode='BIC')
+        print 'FEV = %d' % model.nFev
+        print 'Iterations = %d' % model.nIter
+        print 'Pegged params = %d' % model.nPegged
+        print 'Error? %s' % model.error
+        print 'Converged? %s' % model.converged
 
 
 def fit3():

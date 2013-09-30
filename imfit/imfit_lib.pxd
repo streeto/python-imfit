@@ -38,7 +38,7 @@ cdef extern from 'imfit/model_object.h':
         void PrintDescription()
         void CreateModelImage(double params[])
         double *GetModelImageVector()
-        
+        double GetFitStatistic(double params[])
 
 
 cdef extern from 'imfit/add_functions.h':
@@ -56,8 +56,34 @@ cdef extern from 'imfit/definitions.h':
     int MASK_ZERO_IS_BAD      =  20 # alternate input mask format (good pixels = 1)
 
 
+cdef extern from 'imfit/mpfit_cpp.h':
+    ctypedef struct mp_result:
+        double bestnorm     # Final chi^2
+        double orignorm     # Starting value of chi^2
+        int niter           # Number of iterations
+        int nfev            # Number of function evaluations
+        int status          # Fitting status code
+
+        int npar            # Total number of parameters
+        int nfree           # Number of free parameters
+        int npegged         # Number of pegged parameters
+        int nfunc           # Number of residuals (= num. of data points)
+
+        double *resid       # Final residuals
+			                # nfunc-vector, or 0 if not desired
+        double *xerror      # Final parameter uncertainties (1-sigma)
+			                # npar-vector, or 0 if not desired
+        double *covar       # Final parameter covariance matrix
+			                # npar x npar array, or 0 if not desired
+        char version[20]    # MPFIT version string
+
+
 cdef extern from 'imfit/levmar_fit.h':
     int LevMarFit(int nParamsTot, int nFreeParams, int nDataVals, double *paramVector, 
                   mp_par *parameterLimits, ModelObject *theModel, double ftol, 
-                  bool paramLimitsExist, int verbose)
+                  bool paramLimitsExist, mp_result &resultOut, int verbose)
 
+
+cdef extern from 'imfit/statistics.h':
+    double AIC_corrected(double logLikelihood, int nParams, long nData, int chiSquareUsed)
+    double BIC(double logLikelihood, int nParams, long nData, int chiSquareUsed)

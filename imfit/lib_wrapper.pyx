@@ -281,6 +281,11 @@ cdef class ModelObjectWrapper(object):
             raise Exception('Not fitted yet.')
         return self._fitResult.nfev
     
+    
+    @property
+    def nValidPixels(self):
+        return self._model.GetNValidPixels()
+    
 
     @property
     def fitConverged(self):

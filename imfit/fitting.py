@@ -64,7 +64,32 @@ class Imfit(object):
         verbose = -1 if quiet else 1
         self._modelObject.fit(verbose=verbose)
         
-        
+    
+    @property
+    def fitConverged(self):
+        return self._modelObject.fitConverged
+
+    
+    @property
+    def fitError(self):
+        return self._modelObject.fitError
+    
+    
+    @property
+    def fitTerminated(self):
+        return self._modelObject.fitTerminated
+    
+    
+    @property
+    def nPegged(self):
+        return self._modelObject.nPegged
+
+    
+    @property
+    def nValidPixels(self):
+        return self._modelObject.nValidPixels
+    
+    
     def getModelImage(self, shape=None):
         if self._modelObject is None:
             self._setupModel()

@@ -90,6 +90,21 @@ class Imfit(object):
         return self._modelObject.nValidPixels
     
     
+    @property
+    def chi2(self):
+        return self._modelObject.getFitStatistic(mode='reduced_chi2')
+    
+    
+    @property
+    def AIC(self):
+        return self._modelObject.getFitStatistic(mode='BIC')
+    
+    
+    @property
+    def BIC(self):
+        return self._modelObject.getFitStatistic(mode='BIC')
+    
+    
     def getModelImage(self, shape=None):
         if self._modelObject is None:
             self._setupModel()

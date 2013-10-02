@@ -23,7 +23,11 @@ class Imfit(object):
     
 
     def getModelDescription(self):
-        return deepcopy(self._modelDescr)
+        if self._modelObject is not None:
+            return self._modelObject.getModelDescription()
+        else:
+            # FIXME: get rid of deepcopy
+            return deepcopy(self._modelDescr)
 
 
     def getRawParameters(self):

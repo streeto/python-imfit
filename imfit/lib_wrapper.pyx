@@ -14,6 +14,7 @@ from .model import ModelDescription, FunctionDescription, ParameterDescription
 cimport numpy as np
 import numpy as np
 from os import path
+from copy import deepcopy
 
 import cython
 from libcpp.string cimport string
@@ -68,6 +69,7 @@ cdef class ModelObjectWrapper(object):
     cdef bool _paramLimitsExist
     cdef int _nParams
     cdef int _nFreeParams
+    cdef object _modelDescr
     cdef object _parameterList
     cdef int _nPixels, _nRows, _nCols
     cdef mp_result _fitResult
@@ -98,13 +100,14 @@ cdef class ModelObjectWrapper(object):
         
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
+        self._modelDescr = model_descr
 
         self._model = new ModelObject()
         if self._model == NULL:
             raise MemoryError('Could not allocate ModelObject.')
         # TODO: subsampling as an option.
-        self._addFunctions(model_descr, subsampling=True)
-        self._paramSetup(model_descr)
+        self._addFunctions(self._modelDescr, subsampling=True)
+        self._paramSetup(self._modelDescr)
         
         
     def setMaxThreads(self, int nproc):
@@ -215,12 +218,13 @@ cdef class ModelObjectWrapper(object):
                                     self._model, ftol, self._paramLimitsExist,
                                     self._fitResult, verbose)
         self._fitted = True
-        self._updateParamValues()
     
     
-    def _updateParamValues(self):
-        for i, p in enumerate(self._parameterList):
+    def getModelDescription(self):
+        model_descr = deepcopy(self._modelDescr)
+        for i, p in enumerate(model_descr.parameterList()):
             p.value = self._paramVect[i]
+        return model_descr
     
         
     def getRawParameters(self):

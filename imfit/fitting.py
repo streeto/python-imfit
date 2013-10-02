@@ -81,6 +81,10 @@ class Imfit(object):
     
     
     @property
+    def nIter(self):
+        return self._modelObject.nIter
+
+    @property
     def nPegged(self):
         return self._modelObject.nPegged
 

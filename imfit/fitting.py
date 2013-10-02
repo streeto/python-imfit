@@ -12,7 +12,7 @@ __all__ = ['Imfit']
 
 class Imfit(object):
     
-    def __init__(self, model_descr, psf=None, nproc=-1):
+    def __init__(self, model_descr, psf=None, quiet=True, nproc=-1):
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
         self._modelDescr = model_descr
@@ -20,6 +20,7 @@ class Imfit(object):
         self._mask = None
         self._modelObject = None
         self._nproc = nproc
+        self._debugLevel = -1 if quiet else 1
     
 
     def getModelDescription(self):
@@ -38,14 +39,14 @@ class Imfit(object):
         if self._modelObject is not None:
             # FIXME: Find a better way to free cython resources.
             self._modelObject.close()
-        self._modelObject = ModelObjectWrapper(self._modelDescr)
+        self._modelObject = ModelObjectWrapper(self._modelDescr, self._debugLevel)
         if self._psf is not None:
             self._modelObject.setPSF(np.asarray(self._psf))
         if self._nproc > 0:
             self._modelObject.setMaxThreads(self._nproc)
             
     
-    def fit(self, image, noise, mask=None, quiet=True):
+    def fit(self, image, noise, mask=None):
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):
             if mask is None:
@@ -65,8 +66,7 @@ class Imfit(object):
         
         self._modelObject.setData(image, noise, mask,
                                   n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
-        verbose = -1 if quiet else 1
-        self._modelObject.fit(verbose=verbose)
+        self._modelObject.fit(verbose=self._debugLevel)
         
     
     @property

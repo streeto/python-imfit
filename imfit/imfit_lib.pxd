@@ -39,6 +39,7 @@ cdef extern from 'imfit/model_object.h':
         void CreateModelImage(double params[])
         double *GetModelImageVector()
         double GetFitStatistic(double params[])
+        void SetDebugLevel(int debuggingLevel)
 
 
 cdef extern from 'imfit/add_functions.h':

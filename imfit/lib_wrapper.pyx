@@ -83,7 +83,7 @@ cdef class ModelObjectWrapper(object):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __init__(self, model_descr):
+    def __init__(self, model_descr, debug_level=0):
         self._paramLimitsExist = False
         self._paramInfo = NULL
         self._paramVect = NULL
@@ -103,6 +103,7 @@ cdef class ModelObjectWrapper(object):
         self._modelDescr = model_descr
 
         self._model = new ModelObject()
+        self._model.SetDebugLevel(debug_level)
         if self._model == NULL:
             raise MemoryError('Could not allocate ModelObject.')
         # TODO: subsampling as an option.

@@ -100,7 +100,7 @@ class Imfit(object):
     
     @property
     def chi2(self):
-        return self._modelObject.getFitStatistic(mode='reduced_chi2')
+        return self._modelObject.getFitStatistic(mode='chi2')
     
     
     @property

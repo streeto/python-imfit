@@ -85,6 +85,11 @@ cdef extern from 'imfit/levmar_fit.h':
                   bool paramLimitsExist, mp_result &resultOut, int verbose)
 
 
+cdef extern from 'imfit/diff_evoln_fit.h':
+    int DiffEvolnFit(int nParamsTot, double *initialParams, mp_par *parameterLimits,
+                     ModelObject *theModel, double ftol, int verbose)
+
+
 cdef extern from 'imfit/statistics.h':
     double AIC_corrected(double logLikelihood, int nParams, long nData, int chiSquareUsed)
     double BIC(double logLikelihood, int nParams, long nData, int chiSquareUsed)

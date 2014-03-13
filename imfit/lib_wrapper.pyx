@@ -5,7 +5,7 @@ Created on Sep 15, 2013
 '''
 
 from .imfit_lib cimport ModelObject, mp_par, mp_result
-from .imfit_lib cimport AddFunctions, LevMarFit
+from .imfit_lib cimport AddFunctions, LevMarFit, DiffEvolnFit
 from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
 from .imfit_lib cimport AIC_corrected, BIC
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
@@ -22,6 +22,9 @@ from libcpp.vector cimport vector
 from libcpp cimport bool
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
+
+cdef int FIT_MODE_LM = 0
+cdef int FIT_MODE_DE = 1
 
 ################################################################################
 
@@ -78,6 +81,7 @@ cdef class ModelObjectWrapper(object):
     cdef double *_imageData, *_errorData, *_maskData, *_psfData
     cdef bool _inputDataLoaded
     cdef bool _fitted
+    cdef int _fitMode
     cdef bool _freed
     
 
@@ -95,6 +99,7 @@ cdef class ModelObjectWrapper(object):
         self._psfData = NULL
         self._inputDataLoaded = False
         self._fitted = False
+        self._fitMode = FIT_MODE_LM
         self._freed = False
         self._fitStatus = 0
         
@@ -213,11 +218,17 @@ cdef class ModelObjectWrapper(object):
         self._inputDataLoaded = True
         
         
-    def fit(self, ftol=1e-8, verbose=-1):
-        self._fitStatus = LevMarFit(self._nParams, self._nFreeParams, self._nPixels,
-                                    self._paramVect, self._paramInfo,
-                                    self._model, ftol, self._paramLimitsExist,
-                                    self._fitResult, verbose)
+    def fit(self, ftol=1e-8, verbose=-1, mode='LM'):
+        if mode == 'LM':
+            self._fitStatus = LevMarFit(self._nParams, self._nFreeParams, self._nPixels,
+                                        self._paramVect, self._paramInfo,
+                                        self._model, ftol, self._paramLimitsExist,
+                                        self._fitResult, verbose)
+            self._fitMode = FIT_MODE_LM
+        elif mode == 'DE':
+            self._fitStatus = DiffEvolnFit(self._nParams, self._paramVect, self._paramInfo,
+                                           self._model, ftol, verbose)
+            self._fitMode = FIT_MODE_DE
         self._fitted = True
     
     
@@ -249,7 +260,7 @@ cdef class ModelObjectWrapper(object):
         
     def getFitStatistic(self, mode='chi2'):
         cdef double chi2
-        if self._fitted:
+        if self.fittedLM:
             chi2 = self._fitResult.bestnorm
         else:
             chi2 = self._model.GetFitStatistic(self._paramVect)
@@ -267,23 +278,27 @@ cdef class ModelObjectWrapper(object):
 
 
     @property
+    def fittedLM(self):
+        return self._fitted and (self._fitMode == FIT_MODE_LM)
+
+    @property
     def nPegged(self):
-        if not self._fitted:
-            raise Exception('Not fitted yet.')
+        if not self.fittedLM:
+            raise Exception('Not fitted using L-M (mode=\'lm\').')
         return self._fitResult.npegged
     
     
     @property
     def nIter(self):
-        if not self._fitted:
-            raise Exception('Not fitted yet.')
+        if not self.fittedLM:
+            raise Exception('Not fitted using L-M (mode=\'lm\').')
         return self._fitResult.niter
     
     
     @property
     def nFev(self):
-        if not self._fitted:
-            raise Exception('Not fitted yet.')
+        if not self.fittedLM:
+            raise Exception('Not fitted using L-M (mode=\'lm\').')
         return self._fitResult.nfev
     
     
@@ -293,21 +308,32 @@ cdef class ModelObjectWrapper(object):
     
 
     @property
+    def validPixelFraction(self):
+        return self._model.GetNValidPixels() / self._nPixels
+    
+
+    @property
     def fitConverged(self):
+        if not self.fittedLM:
+            raise Exception('Not fitted using L-M (mode=\'lm\').')
         # See Imfit/src/mpfit.cpp for magic numbers.
-        return self._fitted and (self._fitStatus > 0) and (self._fitStatus < 5)
+        return (self._fitStatus > 0) and (self._fitStatus < 5)
     
     
     @property
     def fitError(self):
+        if not self.fittedLM:
+            raise Exception('Not fitted using L-M (mode=\'lm\').')
         # See Imfit/src/mpfit.cpp for magic numbers.
-        return self._fitted and self._fitStatus <= 0
+        return self._fitStatus <= 0
     
     
     @property
     def fitTerminated(self):
+        if not self.fittedLM:
+            raise Exception('Not fitted using L-M (mode=\'lm\').')
         # See Imfit/src/mpfit.cpp for magic numbers.
-        return self._fitted and self._fitStatus >= 5
+        return self._fitStatus >= 5
     
     
     def close(self):

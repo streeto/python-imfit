@@ -46,7 +46,7 @@ class Imfit(object):
             self._modelObject.setMaxThreads(self._nproc)
             
     
-    def fit(self, image, noise, mask=None):
+    def fit(self, image, noise, mask=None, mode='LM'):
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):
             if mask is None:
@@ -66,7 +66,7 @@ class Imfit(object):
         
         self._modelObject.setData(image, noise, mask,
                                   n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
-        self._modelObject.fit(verbose=self._debugLevel)
+        self._modelObject.fit(verbose=self._debugLevel, mode=mode)
         
     
     @property

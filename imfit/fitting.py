@@ -4,7 +4,7 @@ Created on Sep 20, 2013
 @author: andre
 '''
 from .model import ModelDescription
-from .lib_wrapper import ModelObjectWrapper
+from .lib_wrapper import ModelObjectWrapper  # @UnresolvedImport
 import numpy as np
 from copy import deepcopy
 
@@ -47,6 +47,8 @@ class Imfit(object):
             
     
     def fit(self, image, noise, mask=None, mode='LM'):
+        if mode not in ['LM', 'DE']:
+            raise Exception('Invalid mode: %s' % mode)
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):
             if mask is None:
@@ -57,8 +59,11 @@ class Imfit(object):
         else:
             self._mask = mask.astype('bool')
 
+        if (image.shape != noise.shape) or (image.shape != mask.shape):
+            raise Exception('Image, noise and mask shapes do not match.')
+
         if isinstance(noise, np.ma.MaskedArray):
-            noise = noise.filled()
+            noise = noise.filled(fill_value=noise.max())
 
         image = image.astype('float64')
         noise = noise.astype('float64')
@@ -105,7 +110,7 @@ class Imfit(object):
     
     @property
     def AIC(self):
-        return self._modelObject.getFitStatistic(mode='BIC')
+        return self._modelObject.getFitStatistic(mode='AIC')
     
     
     @property

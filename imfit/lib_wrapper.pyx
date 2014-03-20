@@ -199,10 +199,16 @@ cdef class ModelObjectWrapper(object):
         self._nCols = image.shape[1]
         self._nPixels = self._nRows * self._nCols
             
-        self._model.AddImageDataVector(self._imageData, self._nCols, self._nRows)
+        success = self._model.AddImageDataVector(self._imageData, self._nCols, self._nRows)
+        if not success:
+            raise Exception('Error adding data vector, PSF and/or image parameters not set.')
         self._model.AddImageCharacteristics(gain, read_noise, exp_time, n_combined, original_sky)
-        self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
-        self._model.AddMaskVector(self._nPixels, self._nCols, self._nRows, self._maskData, mask_format)
+        success = self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
+        if not success:
+            raise Exception('Error adding error vector, conversion to weights resulted in bad values.')
+        success = self._model.AddMaskVector(self._nPixels, self._nCols, self._nRows, self._maskData, mask_format)
+        if not success:
+            raise Exception('Error adding mask vector, unknown mask format.')
         self._model.ApplyMask()
         self._inputDataLoaded = True
 
@@ -213,8 +219,10 @@ cdef class ModelObjectWrapper(object):
         self._nRows = shape[0]
         self._nCols = shape[1]
         self._nPixels = self._nRows * self._nCols
-        self._model.SetupModelImage(self._nCols, self._nRows)
-        self._model.CreateModelImage(self._paramVect)
+        if not self._model.SetupModelImage(self._nCols, self._nRows):
+            raise Exception('Error setting up model image, PSF and/or image parameters not set.')
+        if not self._model.CreateModelImage(self._paramVect):
+            raise Exception('Error creating model image, non-finite values in parameter vector.')
         self._inputDataLoaded = True
         
         
@@ -229,6 +237,9 @@ cdef class ModelObjectWrapper(object):
             self._fitStatus = DiffEvolnFit(self._nParams, self._paramVect, self._paramInfo,
                                            self._model, ftol, verbose)
             self._fitMode = FIT_MODE_DE
+        else:
+            raise Exception('Invalid fit mode: %s' % mode)
+
         self._fitted = True
     
     
@@ -252,6 +263,8 @@ cdef class ModelObjectWrapper(object):
         cdef int imsize = self._nPixels * sizeof(double)
 
         model_image = self._model.GetModelImageVector()
+        if model_image is NULL:
+            raise Exception('Error: model image has not yet been computed.')
         output_array = np.empty((self._nRows, self._nCols), dtype='float64')
         memcpy(&output_array[0,0], model_image, imsize)
 

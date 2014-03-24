@@ -20,7 +20,7 @@ class Imfit(object):
         self._mask = None
         self._modelObject = None
         self._nproc = nproc
-        self._debugLevel = -1 if quiet else 1
+        self._debugLevel = 0 if quiet else 1
     
 
     def getModelDescription(self):
@@ -47,7 +47,7 @@ class Imfit(object):
             
     
     def fit(self, image, noise, mask=None, mode='LM'):
-        if mode not in ['LM', 'DE']:
+        if mode not in ['LM', 'DE', 'NM']:
             raise Exception('Invalid mode: %s' % mode)
         self._setupModel()
         if isinstance(image, np.ma.MaskedArray):

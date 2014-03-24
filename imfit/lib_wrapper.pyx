@@ -5,7 +5,7 @@ Created on Sep 15, 2013
 '''
 
 from .imfit_lib cimport ModelObject, mp_par, mp_result
-from .imfit_lib cimport AddFunctions, LevMarFit, DiffEvolnFit
+from .imfit_lib cimport AddFunctions, LevMarFit, DiffEvolnFit, NMSimplexFit
 from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
 from .imfit_lib cimport AIC_corrected, BIC
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
@@ -25,6 +25,7 @@ from libc.string cimport memcpy
 
 cdef int FIT_MODE_LM = 0
 cdef int FIT_MODE_DE = 1
+cdef int FIT_MODE_NM = 2
 
 ################################################################################
 
@@ -78,7 +79,10 @@ cdef class ModelObjectWrapper(object):
     cdef mp_result _fitResult
     cdef int _fitStatus
     
-    cdef double *_imageData, *_errorData, *_maskData, *_psfData
+    cdef double *_imageData
+    cdef double *_errorData
+    cdef double *_maskData
+    cdef double *_psfData
     cdef bool _inputDataLoaded
     cdef bool _fitted
     cdef int _fitMode
@@ -112,7 +116,7 @@ cdef class ModelObjectWrapper(object):
         if self._model == NULL:
             raise MemoryError('Could not allocate ModelObject.')
         # TODO: subsampling as an option.
-        self._addFunctions(self._modelDescr, subsampling=True)
+        self._addFunctions(self._modelDescr, subsampling=True, verbose=debug_level>0)
         self._paramSetup(self._modelDescr)
         
         
@@ -147,10 +151,10 @@ cdef class ModelObjectWrapper(object):
             self._paramVect[i] = param.value
 
 
-    cdef _addFunctions(self, model_descr, bool subsampling):
+    cdef _addFunctions(self, model_descr, bool subsampling, bool verbose=False):
         cdef int status = 0
         status = AddFunctions(self._model, model_descr.functionList(),
-                              model_descr.functionSetIndices(), subsampling)
+                              model_descr.functionSetIndices(), subsampling, verbose)
         if status < 0:
             raise RuntimeError('Failed to add the functions.')
 
@@ -237,6 +241,10 @@ cdef class ModelObjectWrapper(object):
             self._fitStatus = DiffEvolnFit(self._nParams, self._paramVect, self._paramInfo,
                                            self._model, ftol, verbose)
             self._fitMode = FIT_MODE_DE
+        elif mode == 'NM':
+            self._fitStatus = NMSimplexFit(self._nParams, self._paramVect, self._paramInfo,
+                                           self._model, ftol, verbose)
+            self._fitMode = FIT_MODE_NM
         else:
             raise Exception('Invalid fit mode: %s' % mode)
 

@@ -44,7 +44,7 @@ cdef extern from 'imfit/model_object.h':
 
 cdef extern from 'imfit/add_functions.h':
     int AddFunctions(ModelObject *theModel, vector[string] &functionNameList,
-                     vector[int] &functionSetIndices, bool subamplingFlag)
+                     vector[int] &functionSetIndices, bool subamplingFlag, bool verbose)
     int GetFunctionParameters(string &functionName, vector[string] &parameterNameList)
     void GetFunctionNames(vector[string] &functionNameList)
 
@@ -71,11 +71,11 @@ cdef extern from 'imfit/mpfit_cpp.h':
         int nfunc           # Number of residuals (= num. of data points)
 
         double *resid       # Final residuals
-			                # nfunc-vector, or 0 if not desired
+                            # nfunc-vector, or 0 if not desired
         double *xerror      # Final parameter uncertainties (1-sigma)
-			                # npar-vector, or 0 if not desired
+                            # npar-vector, or 0 if not desired
         double *covar       # Final parameter covariance matrix
-			                # npar x npar array, or 0 if not desired
+                            # npar x npar array, or 0 if not desired
         char version[20]    # MPFIT version string
 
 
@@ -88,6 +88,11 @@ cdef extern from 'imfit/levmar_fit.h':
 cdef extern from 'imfit/diff_evoln_fit.h':
     int DiffEvolnFit(int nParamsTot, double *initialParams, mp_par *parameterLimits,
                      ModelObject *theModel, double ftol, int verbose)
+
+
+cdef extern from 'imfit/nmsimplex_fit.h':
+    int NMSimplexFit(int nParamsTot, double *paramVector, mp_par *parameterLimits, 
+                     ModelObject *theModel, double ftol, int verbose )
 
 
 cdef extern from 'imfit/statistics.h':

@@ -19,12 +19,46 @@ fixed_str = 'fixed'
 ################################################################################
 
 def parse_config_file(fname):
+    '''
+    Read an Imfit model description file.
+    
+    Parameters
+    ----------
+    fname : string
+        Path to the model description file.
+        
+    Returns
+    -------
+    model : :class:`~imfit.ModelDescription`
+        A model description object.
+        
+    See also
+    --------
+    parse_config
+    '''
     with open(fname) as fd:
         return parse_config(fd.readlines())
             
 ################################################################################
     
 def parse_config(lines):
+    '''
+    Parses an Imfit model description from a list of strings.
+    
+    Parameters
+    ----------
+    fname : list of strings
+        String representantion of Imfit model description.
+        
+    Returns
+    -------
+    model : :class:`~imfit.ModelDescription`
+        A model description object.
+        
+    See also
+    --------
+    parse_config_file
+    '''
     lines = clean_lines(lines)
 
     model = ModelDescription()
@@ -107,6 +141,7 @@ def read_function(lines):
     for i in xrange(1, len(lines)):
         func.addParameter(read_parameter(lines[i]))
 
+    # FIXME: check function and parameters.
     return func
 
 ################################################################################

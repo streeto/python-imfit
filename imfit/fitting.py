@@ -11,6 +11,38 @@ from copy import deepcopy
 __all__ = ['Imfit']
 
 class Imfit(object):
+    '''
+    A class for fitting models to images using Imfit by Peter Erwin.
+    Can also be used to create images based on models.
+    
+    Due to some library limitations, this object can only fit the model
+    specified in the constructor. If you want to fit several models,
+    you need to create one instance of :class:`Imfit` for each model.
+    On the other hand, one instance can be used to fit the same model
+    to any number of images, or to fit and then create the model image.
+    
+    Parameters
+    ----------
+    model_descr : :class:`ModelDescription`
+        Template model to be fitted, an instance of :class:`ModelDescription`.
+        It will be the template model to every subsequent fitting in this instance.
+        
+    psf : 2-D array
+        Point Spread Function image to be convolved to the images.
+        Default: ``None`` (no convolution).
+        
+    quiet : bool, optional
+        Suppress output, only error messages will be printed.
+        Default: ``True``.
+        
+    nproc : int
+        Number of processors to use when fitting.
+        Default: ``-1`` (use all processors).
+        
+    See also
+    --------
+    parse_config_file, fit
+    '''
     
     def __init__(self, model_descr, psf=None, quiet=True, nproc=-1):
         if not isinstance(model_descr, ModelDescription):
@@ -24,6 +56,13 @@ class Imfit(object):
     
 
     def getModelDescription(self):
+        '''
+        Returns
+        -------
+        model : :class:`ModelDescription`
+            A copy of the currently fitted model, or a copy of
+            the template model if no fitting has taken place yet.
+        '''
         if self._modelObject is not None:
             return self._modelObject.getModelDescription()
         else:
@@ -32,6 +71,14 @@ class Imfit(object):
 
 
     def getRawParameters(self):
+        '''
+        Model parameters for debugging purposes.
+        
+        Returns
+        -------
+        raw_params : array of floats
+            A flat array containing all the model parameter values.  
+        '''
         return np.array(self._modelObject.getRawParameters())
 
 
@@ -47,6 +94,33 @@ class Imfit(object):
             
     
     def fit(self, image, noise, mask=None, mode='LM'):
+        '''
+        Fit the model to ``image``, using the inverse of ``noise`` as weight,
+        optionally masking some pixels.
+        
+        Parameters
+        ----------
+        image : 2-D array
+            Image to be fitted. Can be a masked array.
+        
+        noise : 2-D array
+            Noise image, same shape as ``image``.
+        
+        mask : 2-D array, optional
+            Array containing the masked pixels (``True`` is bad).
+            If not set and ``image`` is a masked array, ``image.mask`` is used.
+            
+        mode : string
+            One of the following algorithms:
+                * ``'LM'`` : Levenberg-Marquardt least squares.
+                * ``'DE'`` : Differential Evolution.
+                * ``'NM'`` : Nelder-Mead Simplex.
+            
+        Examples
+        --------
+        TODO: Examples of fit().
+        
+        '''
         if mode not in ['LM', 'DE', 'NM']:
             raise Exception('Invalid mode: %s' % mode)
         self._setupModel()
@@ -105,20 +179,43 @@ class Imfit(object):
     
     @property
     def chi2(self):
+        '''
+        The :math:`\\chi^2` statistic of the fit.
+        '''
         return self._modelObject.getFitStatistic(mode='chi2')
     
     
     @property
     def AIC(self):
+        '''
+        Bias-corrected Akaike Information Criterion for the fit.
+        '''
         return self._modelObject.getFitStatistic(mode='AIC')
     
     
     @property
     def BIC(self):
+        '''
+        Bayesian Information Criterion for the fit.
+        '''
         return self._modelObject.getFitStatistic(mode='BIC')
     
     
     def getModelImage(self, shape=None):
+        '''
+        Computes an image from the currently fitted model.
+        If not fitted, use the template model.
+        
+        Parameters
+        ----------
+        shape : tuple
+            Shape of the image in (Y, X) format.
+            
+        Returns
+        -------
+        image : 2-D array
+            Image computed from the current model.
+        '''
         if self._modelObject is None:
             self._setupModel()
         if shape is not None:

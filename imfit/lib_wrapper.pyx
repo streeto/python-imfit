@@ -23,13 +23,24 @@ from libcpp cimport bool
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
 
+
+__all__ = ['function_types', 'function_description', 'ModelObjectWrapper']
+
 cdef int FIT_MODE_LM = 0
 cdef int FIT_MODE_DE = 1
 cdef int FIT_MODE_NM = 2
 
 ################################################################################
 
-def function_names():
+def function_types():
+    '''
+    List the available model function types.
+    
+    Returns
+    -------
+    func_types : list
+        A list containing the function types (string).
+    '''
     cdef vector[string] func_names
     GetFunctionNames_lib(func_names)
     return [f for f in func_names]
@@ -37,6 +48,24 @@ def function_names():
 ################################################################################
 
 def function_description(func_type, name=None):
+    '''
+    Get the description of a function type.
+    
+    Parameters
+    ----------
+    func_type : string
+        The function type.
+        
+    name : string, optional
+        Custom name to the function. Example: 'disk', 'bulge'.
+        Default: None.
+        
+    Returns
+    -------
+    func_desc : :class:`FunctionDescription`
+        Instance of :class:`FunctionDescription`.
+        
+    '''
     cdef int status
     cdef vector[string] parameters
     status = GetFunctionParameters(func_type, parameters)

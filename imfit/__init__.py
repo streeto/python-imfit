@@ -110,7 +110,9 @@ if not _ASTROPY_SETUP_:
 
     from model import *
     from fitting import *
-    from lib_wrapper import function_names, function_description
+    from lib_wrapper import *
+    from psf import *
+    from config import *
 
     import os
     from warnings import warn

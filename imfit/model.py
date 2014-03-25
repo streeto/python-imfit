@@ -19,12 +19,31 @@ class ParameterDescription(object):
     
     @property
     def name(self):
+        '''
+        The label of the parameter. Example: ``'x0'``, ``'I_e'``.
+        '''
         return self._name
     
     
     def setValue(self, value, limits=None, fixed=False):
+        '''
+        Set the value and constraints to the parameter.
+        
+        Parameters
+        ----------
+        value : float
+            Value of the parameter.
+        
+        limits : tuple of floats, optional
+            Lower and upper limit of the parameter.
+            Default: ``None`` (no limits).
+            
+        fixed : bool, optional
+            Flag the parameter as fixed. Default: ``False``.
+        '''
         self.value = value
         self.fixed = fixed
+        # FIXME: What does happen when there's only one limit?
         self.limits = limits
         
         
@@ -57,6 +76,14 @@ class FunctionDescription(object):
         
     
     def parameterList(self):
+        '''
+        A list of the parameters composing this function.
+        
+        Returns
+        -------
+        param_list : list of :class:`ParameterDescription`
+            List of the parameters.
+        '''
         return [p for p in self._parameters]
 
 
@@ -99,6 +126,14 @@ class FunctionSetDescription(object):
         
         
     def addFunction(self, f):
+        '''
+        Add a function created using :func:`function_description`.
+        
+        Parameters
+        ----------
+        f : :class:`FunctionDescription`.
+            Function description to be added to the function set.
+        '''
         if not isinstance(f, FunctionDescription):
             raise ValueError('func is not a Function object.')
         if self._contains(f.name):
@@ -114,10 +149,26 @@ class FunctionSetDescription(object):
     
     
     def functionList(self):
+        '''
+        A list of the function types composing this function set.
+        
+        Returns
+        -------
+        param_list : list of strings
+            List of the function types.
+        '''
         return [f.funcType for f in self._functions]
     
     
     def parameterList(self):
+        '''
+        A list of the parameters composing this function set.
+        
+        Returns
+        -------
+        param_list : list of :class:`ParameterDescription`
+            List of the parameters.
+        '''
         params = []
         params.append(self.x0)
         params.append(self.y0)
@@ -156,6 +207,7 @@ class FunctionSetDescription(object):
 ################################################################################
         
 class ModelDescription(object):
+    
     def __init__(self, function_sets=None, options={}):
         self.options = {}
         self.options.update(options)
@@ -168,8 +220,22 @@ class ModelDescription(object):
     @classmethod
     def load(cls, fname):
         '''
-        Load a model description from a file. The syntax is the same
+        Creates a model description from a file. The syntax is the same
         as the imfit config file.
+        
+        Parameters
+        ----------
+        fname : string
+            Path to the model description file.
+            
+        Returns
+        -------
+        model : :class:`ModelDescription`
+            The model description.
+        
+        See also
+        --------
+        parse_config_file
         '''
         from .config import parse_config_file
         return parse_config_file(fname)
@@ -178,6 +244,11 @@ class ModelDescription(object):
     def addFunctionSet(self, fs):
         '''
         Add a function set to the model description.
+        
+        Parameters
+        ----------
+        fs : :class:`FunctionSetDescription`
+            Function set description instance.
         '''
         if not isinstance(fs, FunctionSetDescription):
             raise ValueError('fs is not a FunctionSet object.')
@@ -195,6 +266,8 @@ class ModelDescription(object):
     
     def functionSetIndices(self):
         '''
+        Internal function.
+        
         Returns the indices in the full parameters list such that
         imfit can split the parameters for in the function sets.
         '''
@@ -206,7 +279,12 @@ class ModelDescription(object):
         
     def functionList(self):
         '''
-        Returns the functions composing this model, as a list of strings.
+        List of the function types composing this model, as strings.
+
+        Returns
+        -------
+        func_list : list of string
+            List of the function types.
         '''
         functions = []
         for function_set in self._functionSets:
@@ -215,6 +293,14 @@ class ModelDescription(object):
     
 
     def parameterList(self):
+        '''
+        A list of the parameters composing this model.
+        
+        Returns
+        -------
+        param_list : list of :class:`ParameterDescription`
+            List of the parameters.
+        '''
         params = []
         for function_set in self._functionSets:
             params.extend(function_set.parameterList())
@@ -251,6 +337,23 @@ class ModelDescription(object):
 
 
 class SimpleModelDescription(ModelDescription):
+    '''
+    Simple model with only one function set.
+    
+    Returns
+    -------
+    model : :class:`SimpleModelDescription`
+        Empty model description.
+        
+    Examples
+    --------
+    TODO: Add example of SimpleModelDescription.
+    
+    See also
+    --------
+    ModelDescription
+    '''
+
     def __init__(self):
         super(SimpleModelDescription, self).__init__()
         fs = FunctionSetDescription('fs')
@@ -259,15 +362,31 @@ class SimpleModelDescription(ModelDescription):
         
     @property
     def x0(self):
+        '''
+        X coordinate of the center of the model.
+        Instance of :class:`ParameterDescription`.
+        '''
         return self._functionSets[0].x0
         
 
     @property
     def y0(self):
+        '''
+        Y coordinate of the center of the model.
+        Instance of :class:`ParameterDescription`.
+        '''
         return self._functionSets[0].y0
     
 
     def addFunction(self, f):
+        '''
+        Add a function created using :func:`function_description`.
+        
+        Parameters
+        ----------
+        f : :class:`FunctionDescription`.
+            Function description to be added to the model.
+        '''
         self._functionSets[0].addFunction(f)
         
         

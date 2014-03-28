@@ -327,23 +327,26 @@ cdef class ModelObjectWrapper(object):
 
     @property
     def nPegged(self):
-        if not self.fittedLM:
-            raise Exception('Not fitted using L-M (mode=\'lm\').')
-        return self._fitResult.npegged
+        if self.fittedLM:
+            return self._fitResult.npegged
+        else:
+            return -1
     
     
     @property
     def nIter(self):
-        if not self.fittedLM:
-            raise Exception('Not fitted using L-M (mode=\'lm\').')
-        return self._fitResult.niter
+        if self.fittedLM:
+            return self._fitResult.niter
+        else:
+            return -1
     
     
     @property
     def nFev(self):
-        if not self.fittedLM:
-            raise Exception('Not fitted using L-M (mode=\'lm\').')
-        return self._fitResult.nfev
+        if self.fittedLM:
+            return self._fitResult.nfev
+        else:
+            return -1
     
     
     @property

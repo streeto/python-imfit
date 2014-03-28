@@ -118,9 +118,7 @@ cdef class ModelObjectWrapper(object):
     cdef bool _freed
     
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def __init__(self, model_descr, debug_level=0):
+    def __init__(self, object model_descr, int debug_level=0):
         self._paramLimitsExist = False
         self._paramInfo = NULL
         self._paramVect = NULL
@@ -153,7 +151,7 @@ cdef class ModelObjectWrapper(object):
         self._model.SetMaxThreads(nproc)
         
         
-    def _paramSetup(self, model_descr):
+    def _paramSetup(self, object model_descr):
         self._parameterList = model_descr.parameterList()
         self._nParams = self._nFreeParams = self._model.GetNParams()
         if self._nParams != len(self._parameterList):
@@ -180,7 +178,7 @@ cdef class ModelObjectWrapper(object):
             self._paramVect[i] = param.value
 
 
-    cdef _addFunctions(self, model_descr, bool subsampling, bool verbose=False):
+    cdef _addFunctions(self, object model_descr, bool subsampling, bool verbose=False):
         cdef int status = 0
         status = AddFunctions(self._model, model_descr.functionList(),
                               model_descr.functionSetIndices(), subsampling, verbose)
@@ -188,8 +186,6 @@ cdef class ModelObjectWrapper(object):
             raise RuntimeError('Failed to add the functions.')
 
     
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def setPSF(self, np.ndarray[np.double_t, ndim=2, mode='c'] psf):
         cdef int n_rows_psf, n_cols_psf
 
@@ -202,8 +198,6 @@ cdef class ModelObjectWrapper(object):
         self._model.AddPSFVector(n_cols_psf * n_rows_psf, n_cols_psf, n_rows_psf, self._psfData)
         
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def setData(self,
                 np.ndarray[np.double_t, ndim=2, mode='c'] image,
                 np.ndarray[np.double_t, ndim=2, mode='c'] noise,
@@ -259,7 +253,7 @@ cdef class ModelObjectWrapper(object):
         self._inputDataLoaded = True
         
         
-    def fit(self, ftol=1e-8, verbose=-1, mode='LM'):
+    def fit(self, double ftol=1e-8, int verbose=-1, mode='LM'):
         if mode == 'LM':
             self._fitStatus = LevMarFit(self._nParams, self._nFreeParams, self._nPixels,
                                         self._paramVect, self._paramInfo,

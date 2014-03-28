@@ -364,24 +364,22 @@ cdef class ModelObjectWrapper(object):
 
     @property
     def fitConverged(self):
-        if not self.fittedLM:
-            raise Exception('Not fitted using L-M (mode=\'lm\').')
-        # See Imfit/src/mpfit.cpp for magic numbers.
+        if not self._fitted:
+            raise Exception('Not fitted yet.')
         return (self._fitStatus > 0) and (self._fitStatus < 5)
     
     
     @property
     def fitError(self):
-        if not self.fittedLM:
-            raise Exception('Not fitted using L-M (mode=\'lm\').')
-        # See Imfit/src/mpfit.cpp for magic numbers.
+        if not self._fitted:
+            raise Exception('Not fitted yet.')
         return self._fitStatus <= 0
     
     
     @property
     def fitTerminated(self):
-        if not self.fittedLM:
-            raise Exception('Not fitted using L-M (mode=\'lm\').')
+        if not self._fitted:
+            raise Exception('Not fitted yet.')
         # See Imfit/src/mpfit.cpp for magic numbers.
         return self._fitStatus >= 5
     

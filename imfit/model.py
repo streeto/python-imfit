@@ -41,6 +41,11 @@ class ParameterDescription(object):
         fixed : bool, optional
             Flag the parameter as fixed. Default: ``False``.
         '''
+        if limits is not None:
+            if value < limits[0]:
+                value = limits[0]
+            elif value > limits[1]:
+                value = limits[1]
         self.value = value
         self.fixed = fixed
         # FIXME: What does happen when there's only one limit?

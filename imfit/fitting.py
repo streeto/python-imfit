@@ -52,7 +52,7 @@ class Imfit(object):
         self._mask = None
         self._modelObject = None
         self._nproc = nproc
-        self._debugLevel = 0 if quiet else 1
+        self._debugLevel = -1 if quiet else 1
     
 
     def getModelDescription(self):

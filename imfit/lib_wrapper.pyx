@@ -253,6 +253,10 @@ cdef class ModelObjectWrapper(object):
         self._inputDataLoaded = True
         
         
+    def _createModelImage(self):
+        self._model.CreateModelImage(self._paramVect)
+        
+        
     def fit(self, double ftol=1e-8, int verbose=-1, mode='LM'):
         if mode == 'LM':
             self._fitStatus = LevMarFit(self._nParams, self._nFreeParams, self._nPixels,

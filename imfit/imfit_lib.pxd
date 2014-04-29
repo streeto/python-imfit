@@ -37,9 +37,11 @@ cdef extern from 'imfit/model_object.h':
         int GetNValidPixels()
         void PrintDescription()
         bool CreateModelImage(double params[])
+        bool CreateModelImageOrig(double params[])
         double *GetModelImageVector()
         double GetFitStatistic(double params[])
         void SetDebugLevel(int debuggingLevel)
+        void SetChunkSize(int chunkSize)
 
 
 cdef extern from 'imfit/add_functions.h':

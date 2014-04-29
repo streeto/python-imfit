@@ -10,6 +10,7 @@ from imfit.psf import gaussian_psf
 import numpy as np
 from numpy.testing import assert_allclose
 import time
+from multiprocessing import cpu_count
 
 
 def create_model():
@@ -35,7 +36,7 @@ def create_model():
     return model
 
 
-def test_model_image(imsize, nproc, ntries):
+def test_model_image(imsize, nproc, count, mode='new', chunk=8):
     #psf = gaussian_psf(2.5, size=9)
     psf = None
     model_orig = create_model()
@@ -43,17 +44,19 @@ def test_model_image(imsize, nproc, ntries):
     shape = (imsize, imsize)
     imfit.getModelImage(shape)
     t1 = time.time()
-    for _ in xrange(ntries):
-        imfit._modelObject._createModelImage()
+    for _ in xrange(count):
+        imfit._modelObject._testCreateModelImage(mode=mode, chunk=chunk, count=1)
     return time.time() - t1
     
 
 if __name__ == '__main__':
-    for imsize in [64, 128, 256, 512, 1024, 2048]:
-        print 'imsize =', imsize
-        with open('perf_%d.dat' % imsize, 'w') as f:
-            for nproc in xrange(1, 3):
-                t = test_model_image(imsize, nproc, 1000)
-                print nproc, t
-                f.write('%d %f\n' % (nproc, t))
+    for imsize in [50, 64, 100, 128, 200, 256, 400, 512, 800, 1024, 1600, 2048]:
+        for chunk in [8, 10, 16, 20, 32]:
+            print 'imsize = %d, chunk = %d' % (imsize, chunk)
+            with open('perf_%d_%d.dat' % (imsize, chunk), 'w') as f:
+                for nproc in xrange(1, cpu_count() + 1):
+                    t_new = test_model_image(imsize, nproc, 1000, mode='new', chunk=chunk)
+                    t_old = test_model_image(imsize, nproc, 1000, mode='orig', chunk=chunk)
+                    print nproc, t_new, t_old
+                    f.write('%d %f %f\n' % (nproc, t_new, t_old))
     

@@ -253,8 +253,14 @@ cdef class ModelObjectWrapper(object):
         self._inputDataLoaded = True
         
         
-    def _createModelImage(self):
-        self._model.CreateModelImage(self._paramVect)
+    def _testCreateModelImage(self, mode='new', int chunk=8, int count=1):
+        self._model.SetChunkSize(chunk)
+        if mode == 'new':
+            for _ from 0 <= _ < count:
+                self._model.CreateModelImage(self._paramVect)
+        else:
+            for _ from 0 <= _ < count:
+                self._model.CreateModelImageOrig(self._paramVect)
         
         
     def fit(self, double ftol=1e-8, int verbose=-1, mode='LM'):

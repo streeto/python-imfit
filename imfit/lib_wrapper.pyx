@@ -151,6 +151,10 @@ cdef class ModelObjectWrapper(object):
         self._model.SetMaxThreads(nproc)
         
         
+    def setChunkSize(self, int chunk_size):
+        self._model.SetChunkSize(chunk_size)
+        
+        
     def _paramSetup(self, object model_descr):
         self._parameterList = model_descr.parameterList()
         self._nParams = self._nFreeParams = self._model.GetNParams()
@@ -253,8 +257,7 @@ cdef class ModelObjectWrapper(object):
         self._inputDataLoaded = True
         
         
-    def _testCreateModelImage(self, mode='new', int chunk=8, int count=1):
-        self._model.SetChunkSize(chunk)
+    def _testCreateModelImage(self, mode='new', int count=1):
         if mode == 'new':
             for _ from 0 <= _ < count:
                 self._model.CreateModelImage(self._paramVect)

@@ -44,7 +44,7 @@ class Imfit(object):
     parse_config_file, fit
     '''
     
-    def __init__(self, model_descr, psf=None, quiet=True, nproc=-1):
+    def __init__(self, model_descr, psf=None, quiet=True, nproc=-1, chunk_size=8):
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
         self._modelDescr = model_descr
@@ -52,6 +52,7 @@ class Imfit(object):
         self._mask = None
         self._modelObject = None
         self._nproc = nproc
+        self._chunkSize = chunk_size
         self._debugLevel = -1 if quiet else 1
     
 
@@ -91,6 +92,8 @@ class Imfit(object):
             self._modelObject.setPSF(np.asarray(self._psf))
         if self._nproc > 0:
             self._modelObject.setMaxThreads(self._nproc)
+        if self._chunkSize > 0:
+            self._modelObject.setChunkSize(self._chunkSize)
             
     
     def fit(self, image, noise, mask=None, mode='LM'):

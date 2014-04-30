@@ -40,12 +40,12 @@ def test_model_image(imsize, nproc, count, mode='new', chunk=8):
     #psf = gaussian_psf(2.5, size=9)
     psf = None
     model_orig = create_model()
-    imfit = Imfit(model_orig, psf=psf, quiet=True, nproc=nproc)
+    imfit = Imfit(model_orig, psf=psf, quiet=True, nproc=nproc, chunk_size=chunk)
     shape = (imsize, imsize)
     imfit.getModelImage(shape)
     t1 = time.time()
     for _ in xrange(count):
-        imfit._modelObject._testCreateModelImage(mode=mode, chunk=chunk, count=1)
+        imfit._modelObject._testCreateModelImage(mode=mode, count=1)
     return time.time() - t1
     
 

@@ -74,7 +74,7 @@ def parse_config(lines):
                 model.addFunctionSet(read_function_set('fs%2d' % id_fs, lines[block_start:i]))
                 id_fs += 1
             block_start = i
-    model.addFunctionSet(read_function_set('fs%2d' % id_fs, lines[block_start:i+1]))
+    model.addFunctionSet(read_function_set('fs%d' % id_fs, lines[block_start:i+1]))
     return model
 
 ################################################################################

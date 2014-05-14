@@ -359,10 +359,16 @@ class SimpleModelDescription(ModelDescription):
     ModelDescription
     '''
 
-    def __init__(self):
+    def __init__(self, inst=None):
         super(SimpleModelDescription, self).__init__()
-        fs = FunctionSetDescription('fs')
-        self.addFunctionSet(fs)
+        if isinstance(inst, ModelDescription):
+            if len(inst._functionSets) != 1:
+                raise ValueError('Original model must have only one function set.')
+            self.addFunctionSet(copy(inst._functionSets[0]))
+        elif inst is None:
+            self.addFunctionSet(FunctionSetDescription('fs'))
+        else:
+            raise ValueError('Invalid type: %s' % type(inst))
         
         
     @property

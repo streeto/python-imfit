@@ -4,11 +4,7 @@ Created on 13/03/2014
 @author: andre
 '''
 
-from imfit.fitting import Imfit
-from imfit import SimpleModelDescription, function_description
-from imfit.psf import gaussian_psf
-import numpy as np
-from numpy.testing import assert_allclose
+from imfit import Imfit, SimpleModelDescription, function_description
 import time
 from multiprocessing import cpu_count
 
@@ -37,7 +33,6 @@ def create_model():
 
 
 def test_model_image(imsize, nproc, count, mode='new', chunk=8):
-    #psf = gaussian_psf(2.5, size=9)
     psf = None
     model_orig = create_model()
     imfit = Imfit(model_orig, psf=psf, quiet=True, nproc=nproc, chunk_size=chunk)

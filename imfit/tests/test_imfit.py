@@ -4,9 +4,7 @@ Created on 13/03/2014
 @author: andre
 '''
 
-from imfit.fitting import Imfit
-from imfit import SimpleModelDescription, function_description
-from imfit.psf import gaussian_psf
+from imfit import Imfit, SimpleModelDescription, function_description, gaussian_psf
 import numpy as np
 from numpy.testing import assert_allclose
 

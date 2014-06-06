@@ -10,7 +10,7 @@ IMFITROOT = os.path.relpath(os.path.dirname(__file__))
 def get_extensions():
     cfg = setup_helpers.DistutilsExtensionArgs()
     cfg['include_dirs'].append('numpy')
-    cfg['sources'] = ['imfit/lib_wrapper.pyx']
+    cfg['sources'] = ['imfit/lib/lib_wrapper.pyx']
     cfg['language'] = 'c++'
 
     # FIXME: more portable way to check the libraries.    
@@ -18,4 +18,4 @@ def get_extensions():
     libs =  [l.strip() for l in libs_str.split('-l') if l != '']
     cfg['libraries'].extend(libs)
 
-    return [Extension('imfit.lib_wrapper', **cfg)]
+    return [Extension('imfit.lib.lib_wrapper', **cfg)]

@@ -9,7 +9,7 @@ from .imfit_lib cimport AddFunctions, LevMarFit, DiffEvolnFit, NMSimplexFit
 from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
 from .imfit_lib cimport AIC_corrected, BIC
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
-from .model import ModelDescription, FunctionDescription, ParameterDescription
+from ..model import ModelDescription, FunctionDescription, ParameterDescription
 
 cimport numpy as np
 import numpy as np

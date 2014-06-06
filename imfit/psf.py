@@ -5,7 +5,7 @@ Created on Sep 25, 2013
 '''
 from .fitting import Imfit
 from .model import SimpleModelDescription
-from .lib_wrapper import function_description
+from .lib import function_description
 import numpy as np
 
 __all__ = ['gaussian_psf', 'moffat_psf']

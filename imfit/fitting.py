@@ -4,7 +4,7 @@ Created on Sep 20, 2013
 @author: andre
 '''
 from .model import ModelDescription
-from .lib_wrapper import ModelObjectWrapper  # @UnresolvedImport
+from .lib import ModelObjectWrapper
 import numpy as np
 from copy import deepcopy
 

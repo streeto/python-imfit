@@ -132,7 +132,7 @@ class Imfit(object):
                 mask = image.mask
             image = image.filled(fill_value=0.0)
         if mask is None:
-            mask = np.ones_like(image)
+            mask = np.zeros_like(image)
         else:
             self._mask = mask.astype('bool')
 

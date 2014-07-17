@@ -20,15 +20,15 @@ cdef extern from 'imfit/model_object.h':
         # WARNING: calling SetupModelImage and AddImageDataVector in the
         # same ModelObject instance (or any of them more than once) will
         # cause memory leak!
-        bool SetupModelImage(int nImageColumns, int nImageRows)
-        bool AddImageDataVector(double *image, int n_columns, int n_rows)
+        void SetupModelImage(int nImageColumns, int nImageRows)
+        void AddImageDataVector(double *image, int n_columns, int n_rows)
         
-        void AddImageCharacteristics(double imageGain, double readoutNoise, double expTime, 
+        bool AddImageCharacteristics(double imageGain, double readoutNoise, double expTime, 
                                      int nCombinedImages, double originalSkyBackground)
-        bool AddErrorVector(int nDataValues, int nImageColumns, int nImageRows,
+        void AddErrorVector(int nDataValues, int nImageColumns, int nImageRows,
                             double *pixelVector, int inputType)
-        bool AddMaskVector(int nDataValues, int nImageColumns, int nImageRows,
-                           double *pixelVector, int inputType)
+        int AddMaskVector(int nDataValues, int nImageColumns, int nImageRows,
+                          double *pixelVector, int inputType)
         void ApplyMask()
         void AddPSFVector(int nPixels_psf, int nColumns_psf, int nRows_psf,
                           double *psfPixels)
@@ -36,12 +36,11 @@ cdef extern from 'imfit/model_object.h':
         int GetNParams()
         int GetNValidPixels()
         void PrintDescription()
-        bool CreateModelImage(double params[])
-        bool CreateModelImageOrig(double params[])
+        void CreateModelImage(double params[])
         double *GetModelImageVector()
         double GetFitStatistic(double params[])
         void SetDebugLevel(int debuggingLevel)
-        void SetChunkSize(int chunkSize)
+        void SetOMPChunkSize(int chunkSize)
 
 
 cdef extern from 'imfit/add_functions.h':

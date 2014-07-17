@@ -152,7 +152,7 @@ cdef class ModelObjectWrapper(object):
         
         
     def setChunkSize(self, int chunk_size):
-        self._model.SetChunkSize(chunk_size)
+        self._model.SetOMPChunkSize(chunk_size)
         
         
     def _paramSetup(self, object model_descr):
@@ -230,15 +230,11 @@ cdef class ModelObjectWrapper(object):
         self._nCols = image.shape[1]
         self._nPixels = self._nRows * self._nCols
             
-        success = self._model.AddImageDataVector(self._imageData, self._nCols, self._nRows)
-        if not success:
-            raise Exception('Error adding data vector, PSF and/or image parameters not set.')
+        self._model.AddImageDataVector(self._imageData, self._nCols, self._nRows)
         self._model.AddImageCharacteristics(gain, read_noise, exp_time, n_combined, original_sky)
-        success = self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
-        if not success:
-            raise Exception('Error adding error vector, conversion to weights resulted in bad values.')
+        self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
         success = self._model.AddMaskVector(self._nPixels, self._nCols, self._nRows, self._maskData, mask_format)
-        if not success:
+        if success != 0:
             raise Exception('Error adding mask vector, unknown mask format.')
         self._model.ApplyMask()
         self._inputDataLoaded = True
@@ -250,20 +246,14 @@ cdef class ModelObjectWrapper(object):
         self._nRows = shape[0]
         self._nCols = shape[1]
         self._nPixels = self._nRows * self._nCols
-        if not self._model.SetupModelImage(self._nCols, self._nRows):
-            raise Exception('Error setting up model image, PSF and/or image parameters not set.')
-        if not self._model.CreateModelImage(self._paramVect):
-            raise Exception('Error creating model image, non-finite values in parameter vector.')
+        self._model.SetupModelImage(self._nCols, self._nRows)
+        self._model.CreateModelImage(self._paramVect)
         self._inputDataLoaded = True
         
         
-    def _testCreateModelImage(self, mode='new', int count=1):
-        if mode == 'new':
-            for _ from 0 <= _ < count:
-                self._model.CreateModelImage(self._paramVect)
-        else:
-            for _ from 0 <= _ < count:
-                self._model.CreateModelImageOrig(self._paramVect)
+    def _testCreateModelImage(self, int count=1):
+        for _ from 0 <= _ < count:
+            self._model.CreateModelImage(self._paramVect)
         
         
     def fit(self, double ftol=1e-8, int verbose=-1, mode='LM'):

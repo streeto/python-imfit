@@ -51,7 +51,13 @@ class ParameterDescription(object):
         # FIXME: What does happen when there's only one limit?
         self.limits = limits
         
-        
+    
+    def setTolerance(self, tol):
+        if tol > 1.0 or tol < 0.0:
+            raise Exception('Tolerance must be between 0.0 and 1.0.')
+        self.limits = (self.value * (1 - tol), self.value * (1 + tol))
+    
+    
     def __str__(self):
         if self.fixed:
             return '%s    %f     fixed' % (self.name, self.value)

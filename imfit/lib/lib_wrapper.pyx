@@ -118,7 +118,7 @@ cdef class ModelObjectWrapper(object):
     cdef bool _freed
     
 
-    def __init__(self, object model_descr, int debug_level=0):
+    def __init__(self, object model_descr, int debug_level=0, verbose_level=-1):
         self._paramLimitsExist = False
         self._paramInfo = NULL
         self._paramVect = NULL
@@ -140,6 +140,7 @@ cdef class ModelObjectWrapper(object):
 
         self._model = new ModelObject()
         self._model.SetDebugLevel(debug_level)
+        self._model.SetVerboseLevel(verbose_level)
         if self._model == NULL:
             raise MemoryError('Could not allocate ModelObject.')
         # TODO: subsampling as an option.

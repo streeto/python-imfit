@@ -40,6 +40,7 @@ cdef extern from 'imfit/model_object.h':
         double *GetModelImageVector()
         double GetFitStatistic(double params[])
         void SetDebugLevel(int debuggingLevel)
+        void SetVerboseLevel(int level)
         void SetOMPChunkSize(int chunkSize)
 
 

@@ -36,25 +36,34 @@ class Imfit(object):
         Default: ``True``.
         
     nproc : int
-        Number of processors to use when fitting.
-        Default: ``-1`` (use all processors).
+        Number of processors to use when fitting. If `None``,
+        use all available processors.
+        Default: ``None`` (use all processors).
         
     See also
     --------
     parse_config_file, fit
     '''
     
-    def __init__(self, model_descr, psf=None, quiet=True, nproc=-1, chunk_size=8):
+    def __init__(self, model_descr, psf=None, quiet=True, nproc=None, chunk_size=8):
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
         self._modelDescr = model_descr
         self._psf = psf
         self._mask = None
         self._modelObject = None
-        self._nproc = nproc
+        if nproc is None:
+            self._nproc = nproc
+        else:
+            self._nproc = 0
         self._chunkSize = chunk_size
-        self._debugLevel = -1 if quiet else 1
-    
+        if quiet:
+            self._debugLevel = 0
+            self._verboseLevel = -1
+        else:
+            self._debugLevel = 1 if quiet else 1
+            self._verboseLevel = 1
+
 
     def getModelDescription(self):
         '''
@@ -87,7 +96,7 @@ class Imfit(object):
         if self._modelObject is not None:
             # FIXME: Find a better way to free cython resources.
             self._modelObject.close()
-        self._modelObject = ModelObjectWrapper(self._modelDescr, self._debugLevel)
+        self._modelObject = ModelObjectWrapper(self._modelDescr, self._debugLevel, self._verboseLevel)
         if self._psf is not None:
             self._modelObject.setPSF(np.asarray(self._psf))
         if self._nproc > 0:
@@ -146,9 +155,10 @@ class Imfit(object):
         noise = noise.astype('float64')
         mask = mask.astype('float64')
         
+        # TODO: Add kwargs: n_combined, exp_time, gain, read_noise, original_sky, error_type, mask_format
         self._modelObject.setData(image, noise, mask,
                                   n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
-        self._modelObject.fit(verbose=self._debugLevel, mode=mode)
+        self._modelObject.fit(verbose=self._verboseLevel, mode=mode)
         
     
     @property

@@ -43,9 +43,9 @@ class ParameterDescription(object):
         '''
         if limits is not None:
             if value < limits[0]:
-                value = limits[0]
+                limits[0] = value 
             elif value > limits[1]:
-                value = limits[1]
+                limits[1] = value
         self.value = value
         self.fixed = fixed
         # FIXME: What does happen when there's only one limit?

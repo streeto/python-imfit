@@ -147,7 +147,7 @@ def read_function(lines):
 ################################################################################
 
 def read_parameter(line):
-    limits = ()
+    limits = None
     fixed = False
     
     # Format:

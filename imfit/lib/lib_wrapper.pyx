@@ -8,7 +8,8 @@ from .imfit_lib cimport ModelObject, mp_par, mp_result
 from .imfit_lib cimport AddFunctions, LevMarFit, DiffEvolnFit, NMSimplexFit
 from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNames_lib 
 from .imfit_lib cimport AIC_corrected, BIC
-from .imfit_lib cimport MASK_ZERO_IS_GOOD, WEIGHTS_ARE_SIGMAS
+from .imfit_lib cimport MASK_ZERO_IS_GOOD, MASK_ZERO_IS_BAD
+from .imfit_lib cimport WEIGHTS_ARE_SIGMAS, WEIGHTS_ARE_VARIANCES, WEIGHTS_ARE_WEIGHTS
 from ..model import ModelDescription, FunctionDescription, ParameterDescription
 
 cimport numpy as np
@@ -25,10 +26,6 @@ from libc.string cimport memcpy
 
 
 __all__ = ['function_types', 'function_description', 'ModelObjectWrapper']
-
-cdef int FIT_MODE_LM = 0
-cdef int FIT_MODE_DE = 1
-cdef int FIT_MODE_NM = 2
 
 ################################################################################
 
@@ -114,11 +111,11 @@ cdef class ModelObjectWrapper(object):
     cdef double *_psfData
     cdef bool _inputDataLoaded
     cdef bool _fitted
-    cdef int _fitMode
+    cdef object _fitMode
     cdef bool _freed
     
 
-    def __init__(self, object model_descr, int debug_level=0, verbose_level=-1):
+    def __init__(self, object model_descr, int debug_level=0, int verbose_level=-1, bool subsampling=True):
         self._paramLimitsExist = False
         self._paramInfo = NULL
         self._paramVect = NULL
@@ -130,7 +127,7 @@ cdef class ModelObjectWrapper(object):
         self._psfData = NULL
         self._inputDataLoaded = False
         self._fitted = False
-        self._fitMode = FIT_MODE_LM
+        self._fitMode = None
         self._freed = False
         self._fitStatus = 0
         
@@ -143,8 +140,7 @@ cdef class ModelObjectWrapper(object):
         self._model.SetVerboseLevel(verbose_level)
         if self._model == NULL:
             raise MemoryError('Could not allocate ModelObject.')
-        # TODO: subsampling as an option.
-        self._addFunctions(self._modelDescr, subsampling=True, verbose=debug_level>0)
+        self._addFunctions(self._modelDescr, subsampling=subsampling, verbose=debug_level>0)
         self._paramSetup(self._modelDescr)
         
         
@@ -203,41 +199,112 @@ cdef class ModelObjectWrapper(object):
         self._model.AddPSFVector(n_cols_psf * n_rows_psf, n_cols_psf, n_rows_psf, self._psfData)
         
 
-    def setData(self,
-                np.ndarray[np.double_t, ndim=2, mode='c'] image,
-                np.ndarray[np.double_t, ndim=2, mode='c'] noise,
-                np.ndarray[np.double_t, ndim=2, mode='c'] mask,
-                int n_combined,
-                double exp_time,
-                double gain,
-                double read_noise,
-                double original_sky,
-                int error_type=WEIGHTS_ARE_SIGMAS,
-                int mask_format=MASK_ZERO_IS_GOOD):
+    def loadData(self,
+                 np.ndarray[np.double_t, ndim=2, mode='c'] image not None,
+                 np.ndarray[np.double_t, ndim=2, mode='c'] error,
+                 np.ndarray[np.double_t, ndim=2, mode='c'] mask,
+                 **kwargs):
+        
         cdef int n_rows, n_cols, n_rows_err, n_cols_err
         cdef int n_pixels
 
         # Maybe this was called before.
         if self._inputDataLoaded:
-            raise RuntimeError('Data already set.')
+            raise RuntimeError('Data already loaded.')
         if self._freed:
             raise RuntimeError('Objects already freed.')
             
-        self._imageData = alloc_copy_from_ndarray(image)
-        self._errorData = alloc_copy_from_ndarray(noise)
-        self._maskData = alloc_copy_from_ndarray(mask)
+        # kwargs
+        cdef int n_combined
+        cdef double exp_time
+        cdef double gain
+        cdef double read_noise
+        cdef double original_sky
+        cdef int error_type
+        cdef int mask_format
+        cdef bool use_cash_statistics
+        cdef bool use_model_for_errors
         
+        if 'n_combined' in kwargs:
+            n_combined = kwargs['n_combined']
+        else:
+            n_combined = 1
+            
+        if 'exp_time' in kwargs:
+            exp_time = kwargs['exp_time']
+        else:
+            exp_time = 1.0
+
+        if 'gain' in kwargs:
+            gain = kwargs['gain']
+        else:
+            gain = 1.0
+
+        if 'read_noise' in kwargs:
+            read_noise = kwargs['read_noise']
+        else:
+            read_noise = 0.0
+
+        if 'original_sky' in kwargs:
+            original_sky = kwargs['original_sky']
+        else:
+            original_sky = 0.0
+
+        if 'error_type' in kwargs:
+            if kwargs['error_type'] == 'sigma':
+                error_type = WEIGHTS_ARE_SIGMAS
+            elif kwargs['error_type'] == 'variance':
+                error_type = WEIGHTS_ARE_VARIANCES
+            elif kwargs['error_type'] == 'weight':
+                error_type = WEIGHTS_ARE_WEIGHTS
+            else:
+                raise Exception('Unknown error type: %s' % kwargs['error_type'])
+        else:
+            error_type = WEIGHTS_ARE_SIGMAS
+
+        if 'mask_format' in kwargs:
+            if kwargs['mask_format'] == 'zero_is_good':
+                mask_format = MASK_ZERO_IS_GOOD
+            elif kwargs['mask_format'] == 'zero_is_bad':
+                mask_format = MASK_ZERO_IS_BAD
+            else:
+                raise Exception('Unknown mask format: %s' % kwargs['mask_format'])
+        else:
+            mask_format = MASK_ZERO_IS_GOOD
+            
+        if 'use_cash_statistics' in kwargs:
+            use_cash_statistics = kwargs['use_cash_statistics']
+        else:
+            use_cash_statistics = False            
+            
+        if 'use_model_for_errors' in kwargs:
+            use_model_for_errors = kwargs['use_model_for_errors']
+        else:
+            use_model_for_errors = False            
+            
+        self._imageData = alloc_copy_from_ndarray(image)
         self._nRows = image.shape[0]
         self._nCols = image.shape[1]
         self._nPixels = self._nRows * self._nCols
             
         self._model.AddImageDataVector(self._imageData, self._nCols, self._nRows)
         self._model.AddImageCharacteristics(gain, read_noise, exp_time, n_combined, original_sky)
-        self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
-        success = self._model.AddMaskVector(self._nPixels, self._nCols, self._nRows, self._maskData, mask_format)
-        if success != 0:
-            raise Exception('Error adding mask vector, unknown mask format.')
-        self._model.ApplyMask()
+        
+        if use_cash_statistics:
+            self._model.UseCashStatistic()
+        else:
+            if error is not None:
+                self._errorData = alloc_copy_from_ndarray(error)
+                self._model.AddErrorVector(self._nPixels, self._nCols, self._nRows, self._errorData, error_type)
+            elif use_model_for_errors:
+                self._model.UseModelErrors()
+        
+        if mask is not None:
+            self._maskData = alloc_copy_from_ndarray(mask)
+            success = self._model.AddMaskVector(self._nPixels, self._nCols, self._nRows, self._maskData, mask_format)
+            if success != 0:
+                raise Exception('Error adding mask vector, unknown mask format.')
+
         self._inputDataLoaded = True
 
 
@@ -258,23 +325,26 @@ cdef class ModelObjectWrapper(object):
         
         
     def fit(self, double ftol=1e-8, int verbose=-1, mode='LM'):
+        status = self._model.FinalSetupForFitting()
+        if status < 0:
+            raise Exception('Failure in ModelObject::FinalSetupForFitting().')
         if mode == 'LM':
+            if self._model.UsingCashStatistic():
+                raise Exception('Cannot use Cash statistic with L-M solver.')
             self._fitStatus = LevMarFit(self._nParams, self._nFreeParams, self._nPixels,
                                         self._paramVect, self._paramInfo,
                                         self._model, ftol, self._paramLimitsExist,
                                         self._fitResult, verbose)
-            self._fitMode = FIT_MODE_LM
         elif mode == 'DE':
             self._fitStatus = DiffEvolnFit(self._nParams, self._paramVect, self._paramInfo,
                                            self._model, ftol, verbose)
-            self._fitMode = FIT_MODE_DE
         elif mode == 'NM':
             self._fitStatus = NMSimplexFit(self._nParams, self._paramVect, self._paramInfo,
                                            self._model, ftol, verbose)
-            self._fitMode = FIT_MODE_NM
         else:
             raise Exception('Invalid fit mode: %s' % mode)
 
+        self._fitMode = mode
         self._fitted = True
     
     
@@ -306,28 +376,29 @@ cdef class ModelObjectWrapper(object):
         return output_array
         
         
-    def getFitStatistic(self, mode='chi2'):
-        cdef double chi2
+    def getFitStatistic(self, mode='none'):
+        cdef double fitstat
         if self.fittedLM:
-            chi2 = self._fitResult.bestnorm
+            fitstat = self._fitResult.bestnorm
         else:
-            chi2 = self._model.GetFitStatistic(self._paramVect)
-        if mode == 'chi2':
-            return chi2
+            fitstat = self._model.GetFitStatistic(self._paramVect)
+        if mode == 'none':
+            return fitstat
 
         cdef int n_valid_pix = self._model.GetNValidPixels()
         cdef int deg_free = n_valid_pix - self._nFreeParams
-        if mode == 'reduced_chi2':
-            return chi2 / deg_free
+        if mode == 'reduced':
+            return fitstat / deg_free
         if mode == 'AIC':
-            return AIC_corrected(chi2, self._nFreeParams, n_valid_pix, 1)
+            return AIC_corrected(fitstat, self._nFreeParams, n_valid_pix, 1)
         if mode == 'BIC':
-            return BIC(chi2, self._nFreeParams, n_valid_pix, 1);
+            return BIC(fitstat, self._nFreeParams, n_valid_pix, 1);
 
 
     @property
     def fittedLM(self):
-        return self._fitted and (self._fitMode == FIT_MODE_LM)
+        return self._fitted and (self._fitMode == 'LM')
+
 
     @property
     def nPegged(self):

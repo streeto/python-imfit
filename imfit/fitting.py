@@ -10,6 +10,28 @@ from copy import deepcopy
 
 __all__ = ['Imfit']
 
+        
+################################################################################
+def _composemask(arr, mask, mask_zero_is_bad):
+    '''
+    Helper function to properly compose masks.
+    '''
+    if isinstance(arr, np.ma.MaskedArray):
+        if mask is None:
+            if mask_zero_is_bad:
+                mask = ~arr.mask
+            else:
+                mask = arr.mask
+        else:
+            if mask_zero_is_bad:
+                mask = ~arr.mask & mask
+            else:
+                mask = arr.mask | mask
+    return mask
+################################################################################
+
+
+################################################################################
 class Imfit(object):
     '''
     A class for fitting models to images using Imfit by Peter Erwin.
@@ -35,17 +57,21 @@ class Imfit(object):
         Suppress output, only error messages will be printed.
         Default: ``True``.
         
-    nproc : int
+    nproc : int, optional
         Number of processors to use when fitting. If `None``,
         use all available processors.
         Default: ``None`` (use all processors).
+        
+    subsampling : bool, optional
+        Use pixel subsampling near center.
+        Default: ``True``.
         
     See also
     --------
     parse_config_file, fit
     '''
     
-    def __init__(self, model_descr, psf=None, quiet=True, nproc=None, chunk_size=8):
+    def __init__(self, model_descr, psf=None, quiet=True, nproc=None, chunk_size=8, subsampling=True):
         if not isinstance(model_descr, ModelDescription):
             raise ValueError('model_descr must be a ModelDescription object.')
         self._modelDescr = model_descr
@@ -63,6 +89,7 @@ class Imfit(object):
         else:
             self._debugLevel = 1 if quiet else 1
             self._verboseLevel = 1
+        self._subsampling = subsampling
 
 
     def getModelDescription(self):
@@ -96,7 +123,8 @@ class Imfit(object):
         if self._modelObject is not None:
             # FIXME: Find a better way to free cython resources.
             self._modelObject.close()
-        self._modelObject = ModelObjectWrapper(self._modelDescr, self._debugLevel, self._verboseLevel)
+        self._modelObject = ModelObjectWrapper(self._modelDescr, self._debugLevel,
+                                               self._verboseLevel, self._subsampling)
         if self._psf is not None:
             self._modelObject.setPSF(np.asarray(self._psf))
         if self._nproc > 0:
@@ -105,7 +133,7 @@ class Imfit(object):
             self._modelObject.setChunkSize(self._chunkSize)
             
     
-    def fit(self, image, noise, mask=None, mode='LM'):
+    def fit(self, image, error=None, mask=None, mode='LM', **kwargs):
         '''
         Fit the model to ``image``, using the inverse of ``noise`` as weight,
         optionally masking some pixels.
@@ -115,12 +143,16 @@ class Imfit(object):
         image : 2-D array
             Image to be fitted. Can be a masked array.
         
-        noise : 2-D array
-            Noise image, same shape as ``image``.
+        error : 2-D array, optional
+            error/weight image, same shape as ``image``. If not set,
+            and ``statistics='chi2'``, generate errors from model. 
         
         mask : 2-D array, optional
-            Array containing the masked pixels (``True`` is bad).
-            If not set and ``image`` is a masked array, ``image.mask`` is used.
+            Array containing the masked pixels, must have the same shape as ``image``.
+            Pixels set to ``True`` are bad by default, see the kwarg ``mask_format``.
+            If not set and ``image`` is a masked array, it's mask is used. If both
+            masks are present, the effective mask is composed by masking any pixel that
+            is masked in either input masks.
             
         mode : string
             One of the following algorithms:
@@ -128,36 +160,84 @@ class Imfit(object):
                 * ``'DE'`` : Differential Evolution.
                 * ``'NM'`` : Nelder-Mead Simplex.
             
+        Keyword arguments
+        -----------------
+        n_combined : integer
+            Number of images averaged to make final image (if counts are average or median).
+            Default: 1
+            
+        exp_time : float
+            Exposure time in sec (only if image is in ADU/sec).
+            Default: 1.0
+            
+        gain : float
+            Image gain (e-/ADU).
+            Default: 1.0
+            
+        read_noise : float
+            Image read noise (e-).
+            Default: 0.0
+            
+        original_sky : float
+            Original sky background (ADUs) which was subtracted from image.
+            Default: 0.0
+            
+        error_type : string
+            Values in ``error`` should be interpreted as:
+                * ``'sigma'`` (default).
+                * ``'weight'``.
+                * ``'variance'``.
+            
+        mask_format : string
+            Values in ``mask`` should be interpreted as:
+                * ``'zero_is_good'`` (default).
+                * ``'zero_is_bad'``.
+        
+        use_cash_statistics : boolean
+            Use Cash statistic instead of chi^2. Takes precedence
+            over ``error`` and ``use_model_for_errors``.
+            Default: ``False``
+            
+        use_model_for_errors : boolean
+            Use model values (instead of data) to estimate errors for
+            chi^2 computation. Takes precedence over ``error``.
+            Default: ``False``
+            
         Examples
         --------
         TODO: Examples of fit().
         
         '''
         if mode not in ['LM', 'DE', 'NM']:
-            raise Exception('Invalid mode: %s' % mode)
+            raise Exception('Invalid fit mode: %s' % mode)
+        all_kw = ['n_combined', 'exp_time', 'gain', 'read_noise', 'original_sky',
+                  'error_type', 'mask_format', 'use_cash_statistics', 'use_model_for_errors']
+        for kw in kwargs.keys():
+            if kw not in all_kw:
+                raise Exception('Unknown kwarg: %s' % kw)
+        mask_zero_is_bad = 'mask_format' in kwargs and kwargs['mask_format'] == 'zero_is_bad'
+
         self._setupModel()
-        if isinstance(image, np.ma.MaskedArray):
-            if mask is None:
-                mask = image.mask
-            image = image.filled(fill_value=0.0)
-        if mask is None:
-            mask = np.zeros_like(image)
-        else:
-            self._mask = mask.astype('bool')
-
-        if (image.shape != noise.shape) or (image.shape != mask.shape):
-            raise Exception('Image, noise and mask shapes do not match.')
-
-        if isinstance(noise, np.ma.MaskedArray):
-            noise = noise.filled(fill_value=noise.max())
-
-        image = image.astype('float64')
-        noise = noise.astype('float64')
-        mask = mask.astype('float64')
         
-        # TODO: Add kwargs: n_combined, exp_time, gain, read_noise, original_sky, error_type, mask_format
-        self._modelObject.setData(image, noise, mask,
-                                  n_combined=1, exp_time=1.0, gain=1.0, read_noise=0.0, original_sky=0.0)
+        mask = _composemask(image, mask, mask_zero_is_bad)
+        if isinstance(image, np.ma.MaskedArray):
+            image = image.filled(fill_value=0.0)
+        image = image.astype('float64')
+
+        if error is not None:
+            if image.shape != error.shape:
+                raise Exception('Error and image shapes do not match.')
+            mask = _composemask(image, mask, mask_zero_is_bad)
+            if isinstance(error, np.ma.MaskedArray):
+                error = error.filled(fill_value=error.max())
+            error = error.astype('float64')
+
+        if mask is not None:
+            if image.shape != mask.shape:
+                raise Exception('Mask and image shapes do not match.')
+            mask = mask.astype('float64')
+        
+        self._modelObject.loadData(image, error, mask, **kwargs)
         self._modelObject.fit(verbose=self._verboseLevel, mode=mode)
         
     
@@ -245,4 +325,4 @@ class Imfit(object):
         if self._modelObject is not None:
             # FIXME: Find a better way to free cython resources.
             self._modelObject.close()
-         
+################################################################################

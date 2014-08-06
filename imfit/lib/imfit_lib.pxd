@@ -27,11 +27,14 @@ cdef extern from 'imfit/model_object.h':
                                      int nCombinedImages, double originalSkyBackground)
         void AddErrorVector(int nDataValues, int nImageColumns, int nImageRows,
                             double *pixelVector, int inputType)
+        void UseModelErrors()
+        void UseCashStatistic()
+        bool UsingCashStatistic()
         int AddMaskVector(int nDataValues, int nImageColumns, int nImageRows,
                           double *pixelVector, int inputType)
-        void ApplyMask()
         void AddPSFVector(int nPixels_psf, int nColumns_psf, int nRows_psf,
                           double *psfPixels)
+        int FinalSetupForFitting()
         void SetMaxThreads(int maxThreadNumber)
         int GetNParams()
         int GetNValidPixels()

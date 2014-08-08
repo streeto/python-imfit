@@ -382,17 +382,19 @@ cdef class ModelObjectWrapper(object):
             fitstat = self._fitResult.bestnorm
         else:
             fitstat = self._model.GetFitStatistic(self._paramVect)
-        if mode == 'none':
-            return fitstat
-
         cdef int n_valid_pix = self._model.GetNValidPixels()
         cdef int deg_free = n_valid_pix - self._nFreeParams
-        if mode == 'reduced':
+
+        if mode == 'none':
+            return fitstat
+        elif mode == 'reduced':
             return fitstat / deg_free
-        if mode == 'AIC':
+        elif mode == 'AIC':
             return AIC_corrected(fitstat, self._nFreeParams, n_valid_pix, 1)
-        if mode == 'BIC':
+        elif mode == 'BIC':
             return BIC(fitstat, self._nFreeParams, n_valid_pix, 1);
+        else:
+            raise Exception('Unknown statistic mode: %s' % mode)
 
 
     @property

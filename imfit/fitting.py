@@ -145,7 +145,8 @@ class Imfit(object):
         
         error : 2-D array, optional
             error/weight image, same shape as ``image``. If not set,
-            and ``statistics='chi2'``, generate errors from model. 
+            generate errors from ``image``. See also the keyword args
+            ``use_cash_statistics`` and ``use_model_for_errors``.
         
         mask : 2-D array, optional
             Array containing the masked pixels, must have the same shape as ``image``.
@@ -271,11 +272,11 @@ class Imfit(object):
     
     
     @property
-    def chi2(self):
+    def fitStatistic(self):
         '''
-        The :math:`\\chi^2` statistic of the fit.
+        The :math:`\\chi^2` or Cash statistic of the fit.
         '''
-        return self._modelObject.getFitStatistic(mode='chi2')
+        return self._modelObject.getFitStatistic(mode='none')
     
     
     @property

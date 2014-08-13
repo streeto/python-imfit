@@ -127,7 +127,7 @@ def convolve_image(np.ndarray[np.double_t, ndim=2, mode='c'] image not None,
     cdef double *image_data = alloc_copy_from_ndarray(image)
     convolver.ConvolveImage(image_data)
     
-    shape = (image.shape[1], image.shape[0])
+    shape = (image.shape[0], image.shape[1])
     cdef np.ndarray[np.double_t, ndim=2, mode='c'] convolved_image
     convolved_image = np.empty(shape, dtype='float64')
     memcpy(&convolved_image[0,0], image_data, image.nbytes)

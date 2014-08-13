@@ -10,6 +10,8 @@ from .imfit_lib cimport GetFunctionParameters, GetFunctionNames as GetFunctionNa
 from .imfit_lib cimport AIC_corrected, BIC
 from .imfit_lib cimport MASK_ZERO_IS_GOOD, MASK_ZERO_IS_BAD
 from .imfit_lib cimport WEIGHTS_ARE_SIGMAS, WEIGHTS_ARE_VARIANCES, WEIGHTS_ARE_WEIGHTS
+from .imfit_lib cimport Convolver
+
 from ..model import ModelDescription, FunctionDescription, ParameterDescription
 
 cimport numpy as np
@@ -25,7 +27,7 @@ from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
 
 
-__all__ = ['function_types', 'function_description', 'ModelObjectWrapper']
+__all__ = ['function_types', 'function_description', 'convolve_image', 'ModelObjectWrapper']
 
 ################################################################################
 
@@ -73,6 +75,66 @@ def function_description(func_type, name=None):
         param_desc = ParameterDescription(p, value=0.0)
         func_desc.addParameter(param_desc)
     return func_desc
+
+################################################################################
+
+def convolve_image(np.ndarray[np.double_t, ndim=2, mode='c'] image not None,
+                   np.ndarray[np.double_t, ndim=2, mode='c'] psf not None,
+                   int nproc=0,
+                   verbose=False,
+                   do_fftw_measure=False):
+    '''
+    Convolve an image with a given PSF.
+    
+    Parameters
+    ----------
+    image : array
+        Image to be convolved.
+        
+    psf : array
+        PSF to apply.
+        
+    nproc : int, optional
+        Number of threads to use. If ```nproc <= 0``, use all available cores.
+        Default: ``0``, use all cores.
+    
+    verbose : bool, optional
+        Print diagnostic messages.
+        Default: ``False`` ,be quiet.
+        
+    do_fftw_measure : bool, optional
+        Tells FFTW to find an optimized plan by actually computing several
+        FFTs and measuring their execution time. This can be slow.
+        Default: ``False``, use a faster estimation of plan, which
+        can actually be slower to execute.
+        
+    Returns
+    -------
+    convolved_image : array
+        An array of same shape as ``image`` containing
+        the convolved image.
+        
+    '''
+    cdef double *psf_data = alloc_copy_from_ndarray(psf)
+    cdef Convolver *convolver = new Convolver()
+    convolver.SetupPSF(psf_data, psf.shape[1], psf.shape[0])
+    if nproc >= 0:
+        convolver.SetMaxThreads(nproc)
+        
+    convolver.SetupImage(image.shape[1], image.shape[0])
+    cdef int debug_level = 1 if verbose else -1
+    convolver.DoFullSetup(debug_level, do_fftw_measure)
+    cdef double *image_data = alloc_copy_from_ndarray(image)
+    convolver.ConvolveImage(image_data)
+    
+    shape = (image.shape[1], image.shape[0])
+    cdef np.ndarray[np.double_t, ndim=2, mode='c'] convolved_image
+    convolved_image = np.empty(shape, dtype='float64')
+    memcpy(&convolved_image[0,0], image_data, image.nbytes)
+    free(image_data)
+    del convolver
+    free(psf_data)
+    return convolved_image
 
 ################################################################################
 

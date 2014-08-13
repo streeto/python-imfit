@@ -103,3 +103,11 @@ cdef extern from 'imfit/nmsimplex_fit.h':
 cdef extern from 'imfit/statistics.h':
     double AIC_corrected(double logLikelihood, int nParams, long nData, int chiSquareUsed)
     double BIC(double logLikelihood, int nParams, long nData, int chiSquareUsed)
+
+cdef extern from 'imfit/convolver.h':
+    cdef cppclass Convolver:
+        void SetupPSF(double *psfPixels_input, int nColumns, int nRows)
+        void SetMaxThreads(int maximumThreadNumber)
+        void SetupImage(int nColumns, int nRows)
+        int DoFullSetup(int debugLevel, bool doFFTWMeasure)
+        void ConvolveImage(double *pixelVector)

@@ -12,9 +12,10 @@ __all__ = ['SimpleModelDescription', 'ModelDescription',
 ################################################################################
 
 class ParameterDescription(object):
-    def __init__(self, name, value, limits=None, fixed=False):
+    def __init__(self, name, value, vmin=None, vmax=None, fixed=False):
         self._name = name
-        self.setValue(value, limits, fixed)
+        self._limits = None
+        self.setValue(value, vmin, vmax, fixed)
         
     
     @property
@@ -25,31 +26,54 @@ class ParameterDescription(object):
         return self._name
     
     
-    def setValue(self, value, limits=None, fixed=False):
+    @property
+    def value(self):
+        '''
+        The value of the parameter.
+        '''
+        return self._value
+    
+    
+    @property
+    def limits(self):
+        '''
+        The limits of the parameter, as a tuple.
+        '''
+        return self._limits
+    
+    
+    def setValue(self, value, vmin=None, vmax=None, fixed=False):
         '''
         Set the value and constraints to the parameter.
+        Note: both limits must be present at the same time.
         
         Parameters
         ----------
         value : float
             Value of the parameter.
         
-        limits : tuple of floats, optional
-            Lower and upper limit of the parameter.
+        vmin : float, optional
+            Lower limit of the parameter.
+            Default: ``None`` (no limits).
+            
+        vmax : float, optional
+            Upper limit of the parameter.
             Default: ``None`` (no limits).
             
         fixed : bool, optional
             Flag the parameter as fixed. Default: ``False``.
         '''
-        if limits is not None:
-            if value < limits[0]:
-                limits[0] = value 
-            elif value > limits[1]:
-                limits[1] = value
-        self.value = value
+        if vmin is not None and vmax is not None:
+            if value < vmin:
+                vmin = value 
+            elif value > vmax:
+                vmax = value
+            self._limits = (vmin, vmax)
+        elif vmin is not None or vmax is not None:
+            raise Exception('Both limits must be set at the same time.')
+        
+        self._value = float(value)
         self.fixed = fixed
-        # FIXME: What does happen when there's only one limit?
-        self.limits = limits
         
     
     def setTolerance(self, tol):
@@ -66,7 +90,7 @@ class ParameterDescription(object):
         '''
         if tol > 1.0 or tol < 0.0:
             raise Exception('Tolerance must be between 0.0 and 1.0.')
-        self.limits = (self.value * (1 - tol), self.value * (1 + tol))
+        self._limits = (self._value * (1 - tol), self._value * (1 + tol))
     
     
     def setLimitsRel(self, i1, i2):
@@ -84,7 +108,7 @@ class ParameterDescription(object):
         '''
         if i1 < 0.0 or i2 < 0.0:
             raise Exception('Limit intervals must be positive.')
-        self.setLimits(self.value - i1, self.value + i2)
+        self.setLimits(self._value - i1, self._value + i2)
     
     
     def setLimits(self, v1, v2):
@@ -101,21 +125,20 @@ class ParameterDescription(object):
         '''
         if v1 >= v2:
             raise Exception('v2 must be larger than v1.')
-            if v1 > self.value:
-                v1 = self.value
-            elif v2 < self.value:
-                v2 = self.value
-        self.limits = (v1, v2)
-        print 'set limits', self.limits
+            if v1 > self._value:
+                v1 = self._value
+            elif v2 < self._value:
+                v2 = self._value
+        self._limits = (v1, v2)
     
     
     def __str__(self):
         if self.fixed:
-            return '%s    %f     fixed' % (self.name, self.value)
+            return '%s    %f     fixed' % (self._name, self._value)
         elif self.limits is not None:
-            return '%s    %f     %f,%f' % (self.name, self.value, self.limits[0], self.limits[1])
+            return '%s    %f     %f,%f' % (self._name, self._value, self._limits[0], self._limits[1])
         else:
-            return '%s    %f' % (self.name, self.value)
+            return '%s    %f' % (self._name, self._value)
             
 ################################################################################
 
@@ -124,13 +147,21 @@ class FunctionDescription(object):
         if name is None:
             name = func_type
         self.funcType = func_type
-        self.name = name
+        self._name = name
         self._parameters = []
         if parameters is not None:
             for p in parameters:
                 self.addParameter(p)
         
         
+    @property
+    def name(self):
+        '''
+        Custom name of the function.
+        '''
+        return self._name
+    
+    
     def addParameter(self, p):
         if not isinstance(p, ParameterDescription):
             raise ValueError('p is not a Parameter object.')
@@ -178,7 +209,7 @@ class FunctionDescription(object):
 
 class FunctionSetDescription(object):
     def __init__(self, name, functions=None):
-        self.name = name
+        self._name = name
         self.x0 = ParameterDescription('X0', 0.0)
         self.y0 = ParameterDescription('Y0', 0.0)
         self._functions = []
@@ -187,6 +218,14 @@ class FunctionSetDescription(object):
                 self.addFunction(f)
         
         
+    @property
+    def name(self):
+        '''
+        Custom name of the function set.
+        '''
+        return self._name
+    
+    
     def addFunction(self, f):
         '''
         Add a function created using :func:`function_description`.
@@ -260,7 +299,7 @@ class FunctionSetDescription(object):
     
     
     def __deepcopy__(self, memo):
-        fs = FunctionSetDescription(self.name)
+        fs = FunctionSetDescription(self._name)
         fs.x0 = copy(self.x0)
         fs.y0 = copy(self.y0)
         fs._functions = deepcopy(self._functions, memo)
@@ -457,6 +496,12 @@ class SimpleModelDescription(ModelDescription):
         '''
         self._functionSets[0].addFunction(f)
         
-        
+
+    def addFunctionSet(self, fs):
+        if len(self._functionSets) >= 1:
+            raise Exception('Only one function set allowed.')
+        super(SimpleModelDescription, self).addFunctionSet(fs)
+    
+            
     def __getattr__(self, attr):
         return self._functionSets[0][attr]

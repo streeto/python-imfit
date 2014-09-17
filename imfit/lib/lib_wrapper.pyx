@@ -413,7 +413,7 @@ cdef class ModelObjectWrapper(object):
     def getModelDescription(self):
         model_descr = deepcopy(self._modelDescr)
         for i, p in enumerate(model_descr.parameterList()):
-            p.value = self._paramVect[i]
+            p.setValue(self._paramVect[i])
         return model_descr
     
         

@@ -147,7 +147,8 @@ def read_function(lines):
 ################################################################################
 
 def read_parameter(line):
-    limits = None
+    ulimit = None
+    llimit = None
     fixed = False
     
     # Format:
@@ -167,8 +168,7 @@ def read_parameter(line):
         ulimit = float(ulimit)
         if llimit > ulimit:
             raise ValueError('lower limit (%f) is larger than upper limit (%f)' & (llimit, ulimit))
-        limits = (llimit, ulimit)
 
-    return ParameterDescription(name, value, limits, fixed)
+    return ParameterDescription(name, value, llimit, ulimit, fixed)
 
 ################################################################################

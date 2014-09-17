@@ -53,9 +53,60 @@ class ParameterDescription(object):
         
     
     def setTolerance(self, tol):
+        '''
+        Set the limits using a tolerance fraction value. For example,
+        a tolerance of ``0.2`` for a property of value ``1.0`` sets
+        the limits to ``[0.8, 1.2]``. 
+        
+        Parameters
+        ----------
+        tol : float
+            Tolerance of the property.
+            Must lie between ``0.0`` and ``1.0``.
+        '''
         if tol > 1.0 or tol < 0.0:
             raise Exception('Tolerance must be between 0.0 and 1.0.')
         self.limits = (self.value * (1 - tol), self.value * (1 + tol))
+    
+    
+    def setLimitsRel(self, i1, i2):
+        '''
+        Set the limits using relative intervals. The limits
+        will be ``[value - i1, value + i2]
+        
+        Parameters
+        ----------
+        d1 : float
+            Lower limit interval.
+
+        d1 : float
+            Upper limit interval.
+        '''
+        if i1 < 0.0 or i2 < 0.0:
+            raise Exception('Limit intervals must be positive.')
+        self.setLimits(self.value - i1, self.value + i2)
+    
+    
+    def setLimits(self, v1, v2):
+        '''
+        Set the limits using absolute values.
+        
+        Parameters
+        ----------
+        v1 : float
+            Lower limit.
+
+        v1 : float
+            Upper limit.
+        '''
+        if v1 >= v2:
+            raise Exception('v2 must be larger than v1.')
+            if v1 > self.value:
+                v1 = self.value
+            elif v2 < self.value:
+                v2 = self.value
+        self.limits = (v1, v2)
+        print 'set limits', self.limits
     
     
     def __str__(self):
@@ -120,7 +171,7 @@ class FunctionDescription(object):
 
     def __deepcopy__(self, memo):
         f = FunctionDescription(self.funcType, self.name)
-        f._parameters = deepcopy(self._parameters, memo)
+        f._parameters = [copy(p) for p in self._parameters]
         return f
 
 ################################################################################

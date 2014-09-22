@@ -280,6 +280,14 @@ class Imfit(object):
     
     
     @property
+    def reducedFitStatistic(self):
+        '''
+        The :math:`\\chi^2` or Cash statistic of the fit.
+        '''
+        return self._modelObject.getFitStatistic(mode='reduced')
+    
+    
+    @property
     def AIC(self):
         '''
         Bias-corrected Akaike Information Criterion for the fit.

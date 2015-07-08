@@ -4,7 +4,6 @@ Created on Sep 20, 2013
 @author: andre
 '''
 from .model import ModelDescription
-from .lib import ModelObjectWrapper
 import numpy as np
 from copy import deepcopy
 
@@ -120,6 +119,8 @@ class Imfit(object):
 
 
     def _setupModel(self):
+        from .lib import ModelObjectWrapper
+
         if self._modelObject is not None:
             # FIXME: Find a better way to free cython resources.
             self._modelObject.close()

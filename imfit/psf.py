@@ -5,7 +5,6 @@ Created on Sep 25, 2013
 '''
 from .fitting import Imfit
 from .model import SimpleModelDescription
-from .lib import function_description
 import numpy as np
 
 __all__ = ['gaussian_psf', 'moffat_psf']
@@ -45,6 +44,8 @@ def gaussian_psf(width, type='fwhm', PA=0.0, ell=0.0, size=31):
     psf : 2-D array
         Image of the gaussian.
     '''
+    from .lib import function_description
+
     if size % 2 != 1:
         raise ValueError('Size must be an odd number.')
     if type == 'fwhm':
@@ -97,6 +98,8 @@ def moffat_psf(fwhm, beta=3.1, PA=0.0, ell=0.0, size=31):
     psf : 2-D array
         Image of the gaussian.
     '''
+    from .lib import function_description
+
     if size % 2 != 1:
         raise ValueError('Size must be an odd number.')
     center = (size+1) / 2
